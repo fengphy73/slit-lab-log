@@ -9,12 +9,13 @@
 <body>
 <header>
   <h1>狹縫干涉繞射實驗紀錄</h1>
-  <p class="sub">不收姓名，只填班級與座號或組別</p>
+  <p class="sub">請填姓名、班級，以及座號或組別</p>
 </header>
 <main>
   <section class="card" id="basic">
     <h2>基本資料</h2>
     <div class="grid2">
+      <label>姓名 <input id="name" type="text" placeholder="例：王小明" autocomplete="name"></label>
       <label>班級 <input id="className" type="text" placeholder="例：201" autocomplete="off"></label>
       <label>座號 <input id="seat" type="text" inputmode="numeric" placeholder="例：12"></label>
       <label>組別 <input id="group" type="text" placeholder="例：3"></label>
@@ -43,8 +44,8 @@
     </fieldset>
     <label>填狹縫片上標示的縫間距 d（mm） <input data-f="d" type="text" inputmode="decimal" placeholder="例：0.40"></label>
     <label>縫到屏距離 L (mm) <input data-f="L" type="text" inputmode="decimal" placeholder="例：1000"></label>
-    <label>量了幾個間距 n <input data-f="n" type="text" inputmode="numeric" value="10"></label>
-    <p class="hint">中央亮區看不到 10 條時，可以少量幾個。</p>
+    <label>量了幾個間距 n（從第 0 條算起） <input data-f="n" type="text" inputmode="numeric" value="10"></label>
+    <p class="hint explain">n 是你量的亮紋間距個數。從中央第 0 條亮紋開始，往同一側數到第 n 條，量這段總長，再除以 n 就是一個間距 Δy。例如量了第 0 條到第 10 條，n 就是 10，不是 11。一個間距只有 1～2 mm，直接量很不準；量一長段再除以 n，誤差也跟著縮小。看不清楚 10 條時，數到看得清楚的最後一條就好，n 照實際填。</p>
     <label>第 0 條到第 <span data-n-label>10</span> 條亮紋的總長（mm） <input data-f="total" type="text" inputmode="decimal" placeholder="例：16.25"></label>
     <label>你算出的波長（nm） <input data-f="studentLambda" type="text" inputmode="decimal" placeholder="請自己先算再填"></label>
     <p class="hint">請先用自己的數據算出波長再填，按「核對」後會顯示正確算法。</p>

@@ -249,11 +249,13 @@
     return '\uFEFF' + lines.join('\r\n') + '\r\n';
   }
 
-  // 基本資料：班級必填；座號與組別至少填一個；日期必填；照片編號選填
+  // 基本資料：姓名、班級、日期必填；座號與組別至少填一個；照片編號選填
   function validateBasic(b) {
     b = b || {};
     var errors = [];
     var t = function (v) { return (v === undefined || v === null) ? '' : String(v).trim(); };
+    if (!t(b.name)) errors.push('姓名：請填寫');
+    if (t(b.name).length > 50) errors.push('姓名：最多 50 字');
     if (!t(b.className)) errors.push('班級：請填寫');
     if (!t(b.seat) && !t(b.group)) errors.push('座號與組別至少填一個');
     if (t(b.seat) && !/^\d{1,3}$/.test(t(b.seat))) errors.push('座號：請填 1–3 位數字');

@@ -23,7 +23,7 @@
   function saveRecords(list) { localStorage.setItem(KEY_RECORDS, JSON.stringify(list)); }
 
   // ---- 基本資料 ----
-  var basicIds = ['className', 'seat', 'group', 'date'];
+  var basicIds = ['name', 'className', 'seat', 'group', 'date'];
   function getBasic() { var b = {}; basicIds.forEach(function (id) { b[id] = $('#' + id).value.trim(); }); return b; }
   function initBasic() {
     var saved = {}; try { saved = JSON.parse(localStorage.getItem(KEY_BASIC)) || {}; } catch (e) {}
@@ -162,7 +162,7 @@
     var rec = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       type: type, savedAt: new Date().toISOString(), status: 'local',
-      className: basic.className, seat: basic.seat, group: basic.group, date: basic.date,
+      name: basic.name, className: basic.className, seat: basic.seat, group: basic.group, date: basic.date,
       photoNo: (inp.photoNo || '').trim(),
       color: r.color, colorLabel: r.colorLabel, lambda0: r.lambda0,
       L: r.L, studentLambda: r.studentLambda, lambdaNm: r.lambdaNm,
@@ -206,7 +206,7 @@
     renderCompareAndHint();
     if (!list.length) { box.innerHTML = '<p class="hint">還沒有紀錄。</p>'; return; }
     box.innerHTML = list.map(function (r) {
-      var who = '班級 ' + esc(r.className) + (r.seat ? '　座號 ' + esc(r.seat) : '') + (r.group ? '　組別 ' + esc(r.group) : '');
+      var who = (r.name ? esc(r.name) + '　' : '') + '班級 ' + esc(r.className) + (r.seat ? '　座號 ' + esc(r.seat) : '') + (r.group ? '　組別 ' + esc(r.group) : '');
       var matched = r.match ? '<span class="st sent">相符</span>' : '<span class="st failed">不相符</span>';
       return '<div class="rec" data-id="' + esc(r.id) + '">' +
         '<div><b>' + TYPE_NAME[r.type] + '　' + esc(r.colorLabel || r.color) + '</b>　你的答案 ' + fmt(r.studentLambda, 1) + ' nm　正確 ' + fmt(r.lambdaNm, 1) + ' nm　' + matched +
@@ -251,11 +251,11 @@
   function downloadCSV() {
     var list = loadRecords();
     if (!list.length) { alert('還沒有紀錄可以下載。'); return; }
-    var headers = ['實驗', '班級', '座號', '組別', '日期', '照片編號', '雷射顏色', '標示波長λ0(nm)', '狹縫間距d(mm)', '縫寬a(mm)',
+    var headers = ['實驗', '姓名', '班級', '座號', '組別', '日期', '照片編號', '雷射顏色', '標示波長λ0(nm)', '狹縫間距d(mm)', '縫寬a(mm)',
       'L(mm)', '量了幾個間距n', '第0條到第n條亮紋總長(mm)', 'Δy(mm)', 'W(mm)', '學生算出的波長(nm)', '正確波長λ(nm)', '答案相符', '誤差(%)', '警告', '儲存時間', '送出狀態'];
     var rows = list.map(function (r) {
       var D = r.type === 'double';
-      return [TYPE_NAME[r.type], r.className, r.seat, r.group, r.date, r.photoNo, r.colorLabel || r.color, r.lambda0,
+      return [TYPE_NAME[r.type], r.name, r.className, r.seat, r.group, r.date, r.photoNo, r.colorLabel || r.color, r.lambda0,
         D ? r.d : '', D ? '' : r.a, r.L, D ? r.n : '', D ? r.total : '', D ? fmt(r.dy, 4) : '', D ? '' : r.W,
         fmt(r.studentLambda, 1), fmt(r.lambdaNm, 1), r.match ? '相符' : '不相符', fmt(r.errorPct, 2), r.warning || '',
         new Date(r.savedAt).toLocaleString('zh-TW', { hour12: false }), ST_NAME[r.status]];
@@ -287,7 +287,7 @@
     $('.check', p).addEventListener('click', function () { checkPanel(p); });
     $('.save', p).addEventListener('click', function () { saveRecord(p); });
     $('.clear', p).addEventListener('click', function () {
-      ['L', 'total', 'W', 'studentLambda', 'photoNo'].forEach(function (f) {
+      ['d', 'a', 'L', 'total', 'W', 'studentLambda', 'photoNo'].forEach(function (f) {
         $$('input[data-f="' + f + '"]', p).forEach(function (el) { el.value = ''; el.classList.remove('bad'); });
       });
       $$('input[data-f="n"]', p).forEach(function (el) { el.value = '10'; el.classList.remove('bad'); });
