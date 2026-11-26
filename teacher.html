@@ -14,16 +14,22 @@
 <main>
   <section class="card">
     <h2>五分鐘設定試算表（可選）</h2>
+    <p class="hint">不設也可以：學生的紀錄會存在自己的手機，可以下載 CSV 交給您。想讓資料自動進您的 Google 試算表，請照下面做一次就好。</p>
     <ol class="steps-ol">
-      <li>打開 <a href="https://sheets.google.com" target="_blank" rel="noopener">sheets.google.com</a>，建立空白試算表，名稱可改成「狹縫實驗紀錄」。</li>
-      <li>在試算表選單按「擴充功能」→「Apps Script」。</li>
-      <li>刪掉預設程式，按下方「複製接收程式」，貼進去並儲存。</li>
-      <li>右上角「部署」→「新增部署作業」→類型選「網頁應用程式」。執行身分選「我」，誰可以存取選「所有人」，再按部署並授權。</li>
-      <li>複製網址（結尾是 <code>/exec</code>），貼到下面的欄位。若暫時不設試算表，可留空，學生仍可把紀錄存在手機並下載 CSV。</li>
+      <li><b>開新試算表：</b>打開 <a href="https://sheets.google.com" target="_blank" rel="noopener">sheets.google.com</a>，按「空白」建立試算表，左上角檔名可改成「狹縫實驗紀錄」。</li>
+      <li><b>打開程式編輯器：</b>在試算表上方選單按「擴充功能」，再按「Apps Script」，會開出一個新分頁。</li>
+      <li><b>貼上接收程式：</b>先按這裡的
+        <button type="button" id="copyGs">複製接收程式</button>，
+        回到 Apps Script 分頁，把編輯區裡原本的幾行全部選取刪掉，貼上剛剛複製的程式，按上方的磁碟片圖示儲存。</li>
+      <li><b>發布成網址：</b>按右上角藍色的「部署」，選「新增部署作業」。
+        <ul>
+          <li>按「選取類型」旁的齒輪，選「網頁應用程式」。</li>
+          <li>「執行身分」選「我」，「誰可以存取」選「所有人」，再按「部署」。</li>
+          <li>第一次會要求授權：按「授予存取權」，選您的 Google 帳號。若出現「Google 尚未驗證這個應用程式」，按左下「進階」，再按「前往…（不安全）」，最後按「允許」。這是您自己寫給自己用的程式，所以 Google 會這樣提醒。</li>
+        </ul>
+      </li>
+      <li><b>把網址貼回來：</b>部署完成的視窗裡有一行「網頁應用程式」網址，長得像 <code>https://script.google.com/macros/s/一長串英數字/exec</code>。按旁邊的「複製」，再貼到本頁下方「Google Apps Script 網址」那一格。</li>
     </ol>
-    <div class="actions">
-      <button type="button" id="copyGs">複製接收程式</button>
-    </div>
     <p class="hint" id="copyGsStatus"></p>
     <p class="warn-note">學生的姓名只會進您自己的試算表。產生的學生連結裡含有 /exec 網址，任何拿到連結的人都能送資料進來，請不要把學生連結公開張貼到網路上。</p>
   </section>
