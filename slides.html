@@ -15,6 +15,12 @@
   li::marker { font-weight: 700; }
   b { font-weight: 900; }
   .key { border: 0.35vh solid #000; padding: 0.1em 0.35em; border-radius: 0.3em; }
+  .row { flex: 1; display: flex; gap: 3vw; align-items: center; min-height: 0; }
+  .row > ol { flex: 1.15; }
+  .row > .fig { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; height: 100%; }
+  .fig svg { width: 100%; max-height: 62vh; height: auto; }
+  .row ol { font-size: clamp(18px, 2.75vw, 4.8vh); }
+  .src { font-size: clamp(12px, 1.5vw, 2.6vh); margin-top: 1.5vh; }
   .note { margin-top: auto; font-size: clamp(16px, 2.5vw, 4.2vh); border: 0.4vh dashed #000; padding: 1.2vh 1.5vw; }
   .qr-wrap { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4vw; }
   #qr svg { width: min(62vh, 45vw); height: auto; display: block; }
@@ -29,6 +35,8 @@
     h1 { font-size: 30pt; border-bottom-width: 1.5mm; }
     ol, ul, .qr-text { font-size: 20pt; }
     .note { font-size: 15pt; }
+    .row ol { font-size: 17pt; }
+    .fig svg { max-height: 130mm; }
     #qr svg { width: 120mm; }
     .qr-url { font-size: 9pt; }
     .pageno, .help { display: none; }
@@ -39,45 +47,116 @@
 
 <section class="slide">
   <h1>1　架設與對準 0</h1>
-  <ol>
-    <li>雷射、狹縫片夾座、屏幕架<b>排成一直線</b>；量狹縫片到屏幕紙的 <b>L（約 1000 mm）</b>，照實際記下</li>
-    <li>屏幕紙橫放<b>插到底</b>，灰色「插入槽內」那段藏進槽裡</li>
-    <li>先<b>不放狹縫片</b>，移動屏幕架，讓光點落在<b>紅色 0 線</b>上</li>
-    <li>放入狹縫片（<b>縫直立</b>），左右微調夾座，讓光打在縫上</li>
-    <li>建議：雙縫 <b>d = 0.2</b>、單縫 <b>a = 0.1 或 0.05</b> mm；<b>換縫</b>：夾座平移約 8 mm，雷射、屏幕不動</li>
-  </ol>
+  <div class="row"><ol>
+    <li>三件<b>排成一直線</b>，量 <b>L（約 1000 mm）</b>照實記下</li>
+    <li>屏幕紙橫放<b>插到底</b>，灰色段藏進槽裡</li>
+    <li>先<b>不放狹縫片</b>，光點對準<b>紅色 0 線</b></li>
+    <li>放入狹縫片（<b>縫直立</b>），微調夾座讓光打在縫上</li>
+    <li>建議：雙縫 <b>d = 0.2</b>；單縫 <b>a = 0.1 或 0.05</b> mm</li>
+  </ol><div class="fig"><svg viewBox="0 0 520 420" font-family="Noto Sans CJK TC, Microsoft JhengHei, sans-serif" aria-label="架設示意圖">
+  <text x="260" y="26" font-size="24" font-weight="700" text-anchor="middle">側視圖</text>
+  <line x1="20" y1="230" x2="500" y2="230" stroke="#000" stroke-width="3"/>
+  <rect x="30" y="160" width="90" height="40" fill="#fff" stroke="#000" stroke-width="3"/>
+  <rect x="60" y="200" width="30" height="30" fill="#fff" stroke="#000" stroke-width="3"/>
+  <text x="75" y="150" font-size="22" text-anchor="middle">雷射</text>
+  <rect x="215" y="140" width="14" height="90" fill="#fff" stroke="#000" stroke-width="3"/>
+  <rect x="200" y="210" width="44" height="20" fill="#fff" stroke="#000" stroke-width="3"/>
+  <text x="222" y="128" font-size="22" text-anchor="middle">狹縫片夾座</text>
+  <rect x="440" y="100" width="10" height="130" fill="#ddd" stroke="#000" stroke-width="3"/>
+  <rect x="425" y="210" width="40" height="20" fill="#fff" stroke="#000" stroke-width="3"/>
+  <text x="445" y="88" font-size="22" text-anchor="middle">屏幕架</text>
+  <line x1="120" y1="180" x2="440" y2="180" stroke="#000" stroke-width="3" stroke-dasharray="10 6"/>
+  <text x="330" y="170" font-size="18" text-anchor="middle">雷射光（排成一直線）</text>
+  <line x1="222" y1="260" x2="445" y2="260" stroke="#000" stroke-width="2.5"/>
+  <polygon points="222,260 236,253 236,267"/><polygon points="445,260 431,253 431,267"/>
+  <line x1="222" y1="240" x2="222" y2="275" stroke="#000" stroke-width="2"/>
+  <line x1="445" y1="240" x2="445" y2="275" stroke="#000" stroke-width="2"/>
+  <text x="333" y="292" font-size="24" font-weight="700" text-anchor="middle">L ≈ 1000 mm</text>
+  <text x="260" y="330" font-size="22" font-weight="700" text-anchor="middle">換縫：夾座左右平移約 8 mm</text>
+  <rect x="150" y="345" width="220" height="56" fill="#fff" stroke="#000" stroke-width="3"/>
+  <line x1="215" y1="352" x2="215" y2="394" stroke="#000" stroke-width="4"/>
+  <line x1="260" y1="352" x2="260" y2="394" stroke="#000" stroke-width="4"/>
+  <line x1="305" y1="352" x2="305" y2="394" stroke="#000" stroke-width="4"/>
+  <text x="260" y="418" font-size="16" text-anchor="middle">狹縫片：三條縫，雷射打中間那條</text>
+  <line x1="390" y1="373" x2="470" y2="373" stroke="#000" stroke-width="3"/><polygon points="480,373 466,365 466,381"/>
+  <line x1="130" y1="373" x2="50" y2="373" stroke="#000" stroke-width="3"/><polygon points="40,373 54,365 54,381"/>
+</svg></div></div>
   <p class="note">⚠️ 雷射不可以對著眼睛，也不可以對著同學。</p>
 </section>
 
 <section class="slide">
   <h1>2　雙狹縫怎麼量</h1>
-  <ol>
+  <div class="row"><ol>
     <li>中央亮紋對準 <b>0</b></li>
     <li>用鉛筆點出 <b>第 0 條到第 n 條</b>亮紋（一般 <b>n = 10</b>）</li>
     <li>看不清楚時，數到看得清楚的最後一條，<b>n 照實際填</b></li>
     <li>量 <b>第 0 條到第 n 條的總長</b>（mm），<b>只量一次</b></li>
     <li>記下 <b>d、L、n、總長</b>；<b>紅光、綠光都要做</b></li>
-  </ol>
+  </ol><div class="fig"><svg viewBox="0 0 520 360" font-family="Noto Sans CJK TC, Microsoft JhengHei, sans-serif" aria-label="雙狹縫量法示意圖">
+  <text x="260" y="30" font-size="24" font-weight="700" text-anchor="middle">屏幕上的亮紋（黑色＝亮紋）</text>
+  <rect x="10" y="100" width="500" height="150" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="32.0" y="120" width="16" height="110" fill="#000"/><rect x="76.0" y="120" width="16" height="110" fill="#000"/><rect x="120.0" y="120" width="16" height="110" fill="#000"/><rect x="164.0" y="120" width="16" height="110" fill="#000"/><rect x="208.0" y="120" width="16" height="110" fill="#000"/><rect x="252.0" y="120" width="16" height="110" fill="#000"/><rect x="296.0" y="120" width="16" height="110" fill="#000"/><rect x="340.0" y="120" width="16" height="110" fill="#000"/><rect x="384.0" y="120" width="16" height="110" fill="#000"/><rect x="428.0" y="120" width="16" height="110" fill="#000"/><rect x="472.0" y="120" width="16" height="110" fill="#000"/>
+  <line x1="40" y1="70" x2="40" y2="260" stroke="#000" stroke-width="3" stroke-dasharray="6 4"/>
+  <text x="40" y="62" font-size="20" font-weight="700" text-anchor="middle">0 線</text>
+  <text x="40" y="92" font-size="20" text-anchor="middle">0</text><text x="84" y="92" font-size="20" text-anchor="middle">1</text><text x="128" y="92" font-size="20" text-anchor="middle">2</text><text x="172" y="92" font-size="20" text-anchor="middle">3</text><text x="216" y="92" font-size="20" text-anchor="middle">4</text><text x="260" y="92" font-size="20" text-anchor="middle">5</text><text x="304" y="92" font-size="20" text-anchor="middle">6</text><text x="348" y="92" font-size="20" text-anchor="middle">7</text><text x="392" y="92" font-size="20" text-anchor="middle">8</text><text x="436" y="92" font-size="20" text-anchor="middle">9</text><text x="480" y="92" font-size="20" text-anchor="middle">10</text>
+  <line x1="40" y1="290" x2="480" y2="290" stroke="#000" stroke-width="3"/>
+  <polygon points="40,290 55,282 55,298"/><polygon points="480,290 465,282 465,298"/>
+  <line x1="40" y1="255" x2="40" y2="305" stroke="#000" stroke-width="2"/>
+  <line x1="480" y1="255" x2="480" y2="305" stroke="#000" stroke-width="2"/>
+  <text x="260" y="330" font-size="24" font-weight="700" text-anchor="middle">量第 0 條到第 10 條的總長</text>
+  <text x="260" y="356" font-size="18" text-anchor="middle">（n = 10，共 10 個間距）</text>
+</svg></div></div>
 </section>
 
 <section class="slide">
   <h1>3　單狹縫怎麼量</h1>
-  <ol>
+  <div class="row"><ol>
     <li>中央亮紋對準 <b>0</b></li>
     <li>在中央亮紋<b>兩側的第 1 條暗紋</b>各點一個記號</li>
     <li>量兩個記號之間的距離，就是 <b>W</b>（mm），<b>只量一次</b></li>
     <li>記下 <b>a、L、W</b>；<b>紅光、綠光都要做</b></li>
-  </ol>
+  </ol><div class="fig"><svg viewBox="0 0 520 360" font-family="Noto Sans CJK TC, Microsoft JhengHei, sans-serif" aria-label="單狹縫量法示意圖">
+  <text x="260" y="30" font-size="24" font-weight="700" text-anchor="middle">屏幕上的亮紋（黑色＝亮紋）</text>
+  <rect x="10" y="100" width="500" height="150" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="205" y="120" width="110" height="110" fill="#000"/>
+  <rect x="96" y="140" width="28" height="70" fill="#000"/><rect x="151" y="140" width="28" height="70" fill="#000"/><rect x="341" y="140" width="28" height="70" fill="#000"/><rect x="396" y="140" width="28" height="70" fill="#000"/>
+  <text x="260" y="92" font-size="20" font-weight="700" text-anchor="middle">中央亮紋（對準 0）</text>
+  <line x1="190" y1="105" x2="190" y2="305" stroke="#000" stroke-width="3" stroke-dasharray="6 4"/>
+  <line x1="330" y1="105" x2="330" y2="305" stroke="#000" stroke-width="3" stroke-dasharray="6 4"/>
+  <line x1="190" y1="290" x2="330" y2="290" stroke="#000" stroke-width="3"/>
+  <polygon points="190,290 205,282 205,298"/><polygon points="330,290 315,282 315,298"/>
+  <text x="260" y="280" font-size="26" font-weight="700" text-anchor="middle">W</text>
+  <text x="140" y="275" font-size="17" text-anchor="middle">第 1 條暗紋</text>
+  <text x="380" y="275" font-size="17" text-anchor="middle">第 1 條暗紋</text>
+  <text x="260" y="335" font-size="22" font-weight="700" text-anchor="middle">量兩側第 1 條暗紋之間的距離 W</text>
+</svg></div></div>
 </section>
 
 <section class="slide">
   <h1>4　先寫紙本，再輸入網頁</h1>
-  <ol>
+  <div class="row"><ol>
     <li>數據先寫在<b>分組紀錄表</b></li>
     <li>自己算出 <b>λ = ＿＿ mm = ＿＿ nm</b></li>
     <li>掃下一頁的 QR code，打開<b>實驗紀錄網頁</b></li>
     <li>照紀錄表一欄一欄輸入 → 按<span class="key">核對</span> → 按<span class="key">儲存這筆紀錄</span></li>
-  </ol>
+  </ol><div class="fig"><svg viewBox="0 0 520 380" font-family="Noto Sans CJK TC, Microsoft JhengHei, sans-serif" aria-label="先寫紙本再輸入網頁流程圖">
+  <rect x="30" y="20" width="200" height="150" fill="#fff" stroke="#000" stroke-width="3"/>
+  <text x="130" y="55" font-size="22" font-weight="700" text-anchor="middle">分組紀錄表</text>
+  <line x1="50" y1="80" x2="210" y2="80" stroke="#000" stroke-width="2"/><line x1="50" y1="105" x2="210" y2="105" stroke="#000" stroke-width="2"/><line x1="50" y1="130" x2="210" y2="130" stroke="#000" stroke-width="2"/><line x1="50" y1="155" x2="210" y2="155" stroke="#000" stroke-width="2"/>
+  <line x1="245" y1="95" x2="285" y2="95" stroke="#000" stroke-width="4"/><polygon points="298,95 282,85 282,105"/>
+  <rect x="300" y="45" width="190" height="100" fill="#fff" stroke="#000" stroke-width="3"/>
+  <text x="395" y="85" font-size="22" font-weight="700" text-anchor="middle">自己算 λ</text>
+  <text x="395" y="120" font-size="20" text-anchor="middle">＿ mm ＝ ＿ nm</text>
+  <line x1="395" y1="150" x2="395" y2="195" stroke="#000" stroke-width="4"/><polygon points="395,208 385,192 405,192"/>
+  <rect x="340" y="210" width="110" height="160" rx="16" fill="#fff" stroke="#000" stroke-width="3"/>
+  <text x="395" y="262" font-size="20" font-weight="700" text-anchor="middle">網頁</text>
+  <rect x="355" y="285" width="80" height="30" rx="6" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="395" y="307" font-size="17" text-anchor="middle">核對</text>
+  <rect x="355" y="325" width="80" height="30" rx="6" fill="#000"/>
+  <text x="395" y="347" font-size="17" fill="#fff" text-anchor="middle">儲存</text>
+  <text x="170" y="250" font-size="22" text-anchor="middle">紅光、綠光</text>
+  <text x="170" y="282" font-size="22" text-anchor="middle">各一筆</text>
+</svg></div></div>
   <p class="note">屏幕紙量完不要丟，和紀錄表一起交回。</p>
 </section>
 
@@ -89,6 +168,7 @@
       用手機相機掃描<br>
       每組紅光、綠光<br>各記一筆
       <div class="qr-url" id="qrUrl"></div>
+      <div class="src" id="qrSrc"></div>
     </div>
   </div>
 </section>
@@ -103,10 +183,21 @@
   'use strict';
   // QR code：預設連到學生頁；若簡報網址帶老師設定（#c=…），就連到那位老師的學生連結
   var base = new URL('index.html', location.href).href.split('#')[0];
-  var target = base;
+  var target = base, srcText = '連到：學生頁（預設）';
   var S = window.SlitSettings;
   var token = S ? S.tokenFromHash(location.hash) : '';
-  if (token && S.decodeToken(token).ok) target = base + '#c=' + token;
+  if (token && S.decodeToken(token).ok) {
+    target = base + '#c=' + token; srcText = '連到：老師連結的設定';
+  } else if (S) {
+    // 同一台電腦的教師頁按過「產生學生連結」，就用那份設定
+    try {
+      var raw = localStorage.getItem('slitLabLog.teacherConfig.v1');
+      if (raw) {
+        var v = S.buildStudentUrl(JSON.parse(raw), base);
+        if (v.ok) { target = v.url; token = 'saved'; srcText = '連到：' + ((v.settings.teacherName || '').trim() || '教師頁') + ' 存的設定'; }
+      }
+    } catch (e) {}
+  }
   try {
     var qr = qrcode(0, 'M');
     qr.addData(target);
@@ -117,6 +208,7 @@
     catch (e2) { document.getElementById('qr').textContent = 'QR code 產生失敗，請改用網址。'; }
   }
   document.getElementById('qrUrl').textContent = token ? '' : target;
+  document.getElementById('qrSrc').textContent = srcText;
 
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var i = 0;
