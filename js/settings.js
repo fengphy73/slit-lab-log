@@ -9,6 +9,16 @@
     green: '綠光（532 nm 或 520 nm）'
   };
   var DEFAULT_LAMBDAS = { red: 650, green: 532 };
+  // 預設狹縫片（執行長的雙縫片、單縫片各三條縫；level：suggest 建議使用、advanced 進階）
+  var DEFAULT_SLITS = [
+    { id: '雙縫-0.2', type: 'double', value: 0.2, level: 'suggest' },
+    { id: '雙縫-0.3', type: 'double', value: 0.3, level: 'advanced' },
+    { id: '雙縫-0.45', type: 'double', value: 0.45, level: 'advanced' },
+    { id: '單縫-0.05', type: 'single', value: 0.05, level: 'suggest' },
+    { id: '單縫-0.1', type: 'single', value: 0.1, level: 'suggest' },
+    { id: '單縫-0.2', type: 'single', value: 0.2, level: 'advanced' }
+  ];
+  var LEVEL_TEXT = { suggest: '建議使用', advanced: '進階' };
 
   function utf8ToB64Url(str) {
     var b64;
@@ -46,7 +56,9 @@
     var value = Number(row.value);
     if (!id && type === '' && (row.value === undefined || row.value === '' || row.value === null)) return null;
     if (!id || !type || !isFinite(value) || value <= 0) return { error: true, id: id };
-    return { id: id.slice(0, 30), type: type, value: value };
+    var out = { id: id.slice(0, 30), type: type, value: value };
+    if (row.level === 'suggest' || row.level === 'advanced') out.level = row.level;
+    return out;
   }
 
   function normalize(raw) {
@@ -204,7 +216,12 @@
   }
   function slitOptionLabel(s) {
     var unit = s.type === 'double' ? 'd' : 'a';
-    return '第 ' + s.id + ' 片（' + unit + '=' + formatSlitValue(s.value) + ' mm）';
+    var name = /^[A-Za-z0-9-]{1,6}$/.test(s.id) ? '第 ' + s.id + ' 片' : s.id;
+    var tag = LEVEL_TEXT[s.level] ? '，' + LEVEL_TEXT[s.level] : '';
+    return name + '（' + unit + '=' + formatSlitValue(s.value) + ' mm' + tag + '）';
+  }
+  function defaultSlits() {
+    return DEFAULT_SLITS.map(function (s) { return { id: s.id, type: s.type, value: s.value, level: s.level }; });
   }
 
   // 老師設定頁防呆：只提醒、不阻擋產生連結
@@ -245,6 +262,7 @@
     slitsFor: slitsFor,
     formatSlitValue: formatSlitValue,
     slitOptionLabel: slitOptionLabel,
+    defaultSlits: defaultSlits,
     HINT_SLIT_UNIT: HINT_SLIT_UNIT,
     HINT_LAMBDA_NM: HINT_LAMBDA_NM,
     slitValueHint: slitValueHint,

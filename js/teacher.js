@@ -19,12 +19,18 @@
         '<option value="double">雙狹縫 d</option>' +
         '<option value="single">單狹縫 a</option>' +
       '</select></td>' +
-      '<td><input type="text" data-k="value" inputmode="decimal" placeholder="例：0.40">' +
+      '<td><input type="text" data-k="value" inputmode="decimal" placeholder="例：0.20">' +
         '<p class="soft-hint" data-slit-hint hidden></p></td>' +
+      '<td><select data-k="level">' +
+        '<option value="">（不標）</option>' +
+        '<option value="suggest">建議使用</option>' +
+        '<option value="advanced">進階</option>' +
+      '</select></td>' +
       '<td><button type="button" class="del-row">刪除</button></td>';
     if (data.id) tr.querySelector('[data-k="id"]').value = data.id;
     if (data.type) tr.querySelector('[data-k="type"]').value = data.type;
     if (data.value != null && data.value !== '') tr.querySelector('[data-k="value"]').value = String(data.value);
+    if (data.level) tr.querySelector('[data-k="level"]').value = data.level;
     tr.querySelector('.del-row').addEventListener('click', function () { tr.parentNode.removeChild(tr); saveLocal(); refreshHints(); });
     $$('input, select', tr).forEach(function (el) {
       el.addEventListener('input', function () { saveLocal(); refreshHints(); });
@@ -55,7 +61,8 @@
       return {
         id: $('[data-k="id"]', tr).value,
         type: $('[data-k="type"]', tr).value,
-        value: $('[data-k="value"]', tr).value
+        value: $('[data-k="value"]', tr).value,
+        level: $('[data-k="level"]', tr).value
       };
     });
   }
@@ -196,7 +203,7 @@
     fillForm(fromHash.settings);
     saveLocal();
   } else if (!loadLocal()) {
-    addSlitRow();
+    S.defaultSlits().forEach(addSlitRow);
   }
   refreshHints();
 })();

@@ -418,6 +418,13 @@
   // ---- 初始化 ----
   fillColorLabels();
   applyTeacherSettings(activeSettings);
+  if (!activeSettings && window.SlitSettings) {
+    // 沒有老師設定：用預設的 6 條縫
+    $$('.panel').forEach(function (p) {
+      var all = SlitSettings.defaultSlits();
+      setupSlitPicker(p, SlitSettings.slitsFor({ slits: all }, p.dataset.type));
+    });
+  }
   initBasic();
   $$('.tabs button').forEach(function (b) {
     b.addEventListener('click', function () {
