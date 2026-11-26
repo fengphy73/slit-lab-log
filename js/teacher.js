@@ -6,6 +6,10 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 
+  function slitHintText() {
+    var el = $('#slitHintText');
+    return (el && el.textContent) || (S && S.HINT_SLIT_UNIT) || '';
+  }
   function addSlitRow(data) {
     data = data || {};
     var tr = document.createElement('tr');
@@ -15,14 +19,35 @@
         '<option value="double">雙狹縫 d</option>' +
         '<option value="single">單狹縫 a</option>' +
       '</select></td>' +
-      '<td><input type="text" data-k="value" inputmode="decimal" placeholder="例：0.40"></td>' +
+      '<td><input type="text" data-k="value" inputmode="decimal" placeholder="例：0.40">' +
+        '<p class="soft-hint" data-slit-hint hidden></p></td>' +
       '<td><button type="button" class="del-row">刪除</button></td>';
     if (data.id) tr.querySelector('[data-k="id"]').value = data.id;
     if (data.type) tr.querySelector('[data-k="type"]').value = data.type;
     if (data.value != null && data.value !== '') tr.querySelector('[data-k="value"]').value = String(data.value);
-    tr.querySelector('.del-row').addEventListener('click', function () { tr.parentNode.removeChild(tr); saveLocal(); });
-    $$('input, select', tr).forEach(function (el) { el.addEventListener('input', saveLocal); el.addEventListener('change', saveLocal); });
+    tr.querySelector('.del-row').addEventListener('click', function () { tr.parentNode.removeChild(tr); saveLocal(); refreshHints(); });
+    $$('input, select', tr).forEach(function (el) {
+      el.addEventListener('input', function () { saveLocal(); refreshHints(); });
+      el.addEventListener('change', function () { saveLocal(); refreshHints(); });
+    });
     $('#slitTable tbody').appendChild(tr);
+    refreshHints();
+  }
+  function setHint(el, text) {
+    if (!el) return;
+    if (text) { el.hidden = false; el.textContent = text; }
+    else { el.hidden = true; }
+  }
+  function refreshHints() {
+    setHint($('[data-lambda-hint="red"]'), S.laserLambdaHint($('#lambdaRed') && $('#lambdaRed').value));
+    setHint($('[data-lambda-hint="green"]'), S.laserLambdaHint($('#lambdaGreen') && $('#lambdaGreen').value));
+    var msg = slitHintText();
+    $$('#slitTable tbody tr').forEach(function (tr) {
+      var inp = $('[data-k="value"]', tr);
+      var hint = $('[data-slit-hint]', tr);
+      var text = S.slitValueHint(inp && inp.value);
+      setHint(hint, text ? (msg || text) : '');
+    });
   }
 
   function readSlits() {
@@ -71,6 +96,7 @@
     body.innerHTML = '';
     if (cfg.slits && cfg.slits.length) cfg.slits.forEach(addSlitRow);
     else addSlitRow();
+    refreshHints();
   }
   function saveLocal() {
     try { localStorage.setItem(KEY, JSON.stringify(readForm())); } catch (e) {}
@@ -117,6 +143,7 @@
     }
     ul.innerHTML = '';
     saveLocal();
+    refreshHints(); // 防呆只提醒，不阻擋產生連結
     showLink(v.url);
   }
 
@@ -140,10 +167,10 @@
     $('#importStatus').textContent = '已讀回設定，請檢查後再產生新連結。';
   });
   $$('#teacherName, #scriptUrl, #lambdaRed, #lambdaGreen, #suggestedL').forEach(function (el) {
-    el.addEventListener('input', saveLocal);
+    el.addEventListener('input', function () { saveLocal(); refreshHints(); });
   });
   $$('#laserRed, #laserGreen, #expDouble, #expSingle').forEach(function (el) {
-    el.addEventListener('change', saveLocal);
+    el.addEventListener('change', function () { saveLocal(); refreshHints(); });
   });
 
   $('#copyGs').addEventListener('click', function () {
@@ -171,4 +198,5 @@
   } else if (!loadLocal()) {
     addSlitRow();
   }
+  refreshHints();
 })();

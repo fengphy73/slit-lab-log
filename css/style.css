@@ -72,3 +72,7 @@ header .course{margin:4px 0 0;font-size:.95rem}
 
 .slit-pick select{width:100%;margin-top:4px}
 footer a.teacher-link{margin-left:.5em}
+
+.soft-hint{color:var(--warn);font-size:.82rem;font-weight:normal;margin:4px 0 0;line-height:1.4}
+.checkrow .soft-hint{flex-basis:100%}
+.slit-table .soft-hint{margin:4px 0 0;max-width:16em}

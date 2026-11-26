@@ -207,6 +207,26 @@
     return '第 ' + s.id + ' 片（' + unit + '=' + formatSlitValue(s.value) + ' mm）';
   }
 
+  // 老師設定頁防呆：只提醒、不阻擋產生連結
+  var HINT_SLIT_UNIT = '單位是 mm（片子若印 µm，例如 40 µm 請填 0.04）';
+  var HINT_LAMBDA_NM = '請填 nm，例如 650';
+  function slitValueHint(raw) {
+    var s = (raw === undefined || raw === null) ? '' : String(raw).trim();
+    if (s === '') return '';
+    var n = Number(s);
+    if (!isFinite(n)) return '';
+    if (n < 0.01 || n > 2) return HINT_SLIT_UNIT;
+    return '';
+  }
+  function laserLambdaHint(raw) {
+    var s = (raw === undefined || raw === null) ? '' : String(raw).trim();
+    if (s === '') return '';
+    var n = Number(s);
+    if (!isFinite(n)) return '';
+    if (n < 400 || n > 700) return HINT_LAMBDA_NM;
+    return '';
+  }
+
   var api = {
     SCRIPT_PREFIX: SCRIPT_PREFIX,
     COLOR_CAPTION: COLOR_CAPTION,
@@ -224,7 +244,11 @@
     allowedColors: allowedColors,
     slitsFor: slitsFor,
     formatSlitValue: formatSlitValue,
-    slitOptionLabel: slitOptionLabel
+    slitOptionLabel: slitOptionLabel,
+    HINT_SLIT_UNIT: HINT_SLIT_UNIT,
+    HINT_LAMBDA_NM: HINT_LAMBDA_NM,
+    slitValueHint: slitValueHint,
+    laserLambdaHint: laserLambdaHint
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SlitSettings = api;

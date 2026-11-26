@@ -42,9 +42,11 @@
     <p class="hint">可只勾一種顏色。標示波長會寫進老師收到的試算表；學生畫面只標示常見值，不顯示與參考值的誤差。</p>
     <label class="checkrow"><input type="checkbox" id="laserRed" checked> 紅光，標示波長
       <input id="lambdaRed" type="text" inputmode="decimal" value="650" class="inline-num"> nm
+      <span class="soft-hint" data-lambda-hint="red" hidden>請填 nm，例如 650</span>
     </label>
     <label class="checkrow"><input type="checkbox" id="laserGreen" checked> 綠光，標示波長
       <input id="lambdaGreen" type="text" inputmode="decimal" value="532" class="inline-num"> nm
+      <span class="soft-hint" data-lambda-hint="green" hidden>請填 nm，例如 650</span>
     </label>
 
     <h3>要開哪些實驗</h3>
@@ -56,7 +58,8 @@
     </label>
 
     <h3>狹縫片清單（可留空）</h3>
-    <p class="hint">有填的話，學生頁會用下拉選單帶入 d 或 a，並保留「其他／自己填」。</p>
+    <p class="hint">有填的話，學生頁會用下拉選單帶入 d 或 a，並保留「其他／自己填」。編號可自由填，例如 A-1、A-2。</p>
+    <p class="soft-hint" id="slitHintText" hidden>單位是 mm（片子若印 µm，例如 40 µm 請填 0.04）</p>
     <div class="table-wrap">
       <table class="slit-table" id="slitTable">
         <thead>
