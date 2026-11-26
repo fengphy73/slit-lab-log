@@ -183,7 +183,7 @@
   'use strict';
   // QR code：預設連到學生頁；若簡報網址帶老師設定（#c=…），就連到那位老師的學生連結
   var base = new URL('index.html', location.href).href.split('#')[0];
-  var target = base, srcText = '連到：學生頁（預設）';
+  var target = base, srcText = '尚未套用老師設定（連到預設學生頁）';
   var S = window.SlitSettings;
   var token = S ? S.tokenFromHash(location.hash) : '';
   if (token && S.decodeToken(token).ok) {

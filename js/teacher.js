@@ -156,6 +156,13 @@
 
   $('#addSlit').addEventListener('click', function () { addSlitRow(); saveLocal(); });
   $('#generate').addEventListener('click', generate);
+  // 上課簡報：QR code 連到這位老師的學生連結
+  $('#openSlides').addEventListener('click', function () {
+    var url = $('#studentUrl').value;
+    var i = url.indexOf('#');
+    var slides = new URL('slides.html', location.href).href.split('#')[0] + (i >= 0 ? url.slice(i) : '');
+    window.open(slides, '_blank');
+  });
   $('#copyUrl').addEventListener('click', function () {
     var url = $('#studentUrl').value;
     if (!url) return;
