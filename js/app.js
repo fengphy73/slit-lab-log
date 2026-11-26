@@ -379,13 +379,7 @@
   }
 
   function applyTeacherSettings(cfg) {
-    if (!cfg) {
-      var foot = $('#pageFooter');
-      if (foot && !foot.querySelector('.teacher-link')) {
-        foot.insertAdjacentHTML('beforeend', '　<a class="teacher-link" href="teacher.html">老師設定</a>');
-      }
-      return;
-    }
+    if (!cfg) return;  // 學生頁不放老師設定入口（老師用 teacher.html 網址直接進）
     if (cfg.scriptUrl) SCRIPT_URL = cfg.scriptUrl;
     if (cfg.teacherName) {
       var el = $('#courseName');
