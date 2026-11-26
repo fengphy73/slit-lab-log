@@ -135,6 +135,7 @@
   function showLink(url) {
     $('#resultBox').hidden = false;
     $('#studentUrl').value = url;
+    $('#slidesUrl').value = slidesUrlFor(url);
     $('#copyUrlStatus').textContent = '';
     drawQr(url);
     $('#resultBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -157,11 +158,16 @@
   $('#addSlit').addEventListener('click', function () { addSlitRow(); saveLocal(); });
   $('#generate').addEventListener('click', generate);
   // 上課簡報：QR code 連到這位老師的學生連結
-  $('#openSlides').addEventListener('click', function () {
-    var url = $('#studentUrl').value;
+  function slidesUrlFor(url) {
     var i = url.indexOf('#');
-    var slides = new URL('slides.html', location.href).href.split('#')[0] + (i >= 0 ? url.slice(i) : '');
-    window.open(slides, '_blank');
+    return new URL('slides.html', location.href).href.split('#')[0] + (i >= 0 ? url.slice(i) : '');
+  }
+  $('#openSlides').addEventListener('click', function () { window.open($('#slidesUrl').value, '_blank'); });
+  $('#copySlides').addEventListener('click', function () {
+    var el = $('#slidesUrl'), st = $('#copySlidesStatus');
+    function ok() { st.textContent = '已複製簡報網址。'; }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(el.value).then(ok, function () { el.select(); document.execCommand('copy'); ok(); });
+    else { el.select(); document.execCommand('copy'); ok(); }
   });
   $('#copyUrl').addEventListener('click', function () {
     var url = $('#studentUrl').value;

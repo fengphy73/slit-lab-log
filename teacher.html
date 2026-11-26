@@ -89,11 +89,17 @@
       <textarea id="studentUrl" rows="4" readonly></textarea>
       <div class="actions">
         <button type="button" id="copyUrl">複製連結</button>
-        <button type="button" id="openSlides">開啟上課簡報</button>
       </div>
       <p class="hint" id="copyUrlStatus"></p>
       <div id="qr" class="qr" aria-label="學生連結的 QR code"></div>
       <p class="hint">請用手機掃描或把連結傳給學生。請勿公開張貼到網路。</p>
+      <h2>上課簡報網址</h2>
+      <input type="text" id="slidesUrl" readonly style="width:100%">
+      <div class="actions">
+        <button type="button" id="openSlides">開啟上課簡報</button>
+        <button type="button" id="copySlides">複製簡報網址</button>
+      </div>
+      <p class="hint" id="copySlidesStatus">簡報最後一頁的 QR code 就是上面的學生連結。換電腦投影時，打開這個網址即可。</p>
     </div>
   </section>
 
@@ -114,6 +120,6 @@
 </footer>
 <script src="js/settings.js"></script>
 <script src="js/qrcode.js"></script>
-<script src="js/teacher.js?v=20261127"></script>
+<script src="js/teacher.js?v=20261127b"></script>
 </body>
 </html>

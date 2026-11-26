@@ -21,6 +21,12 @@
   .fig svg { width: 100%; max-height: 62vh; height: auto; }
   .row ol { font-size: clamp(18px, 2.75vw, 4.8vh); }
   .src { font-size: clamp(12px, 1.5vw, 2.6vh); margin-top: 1.5vh; }
+  .imgslide { padding: 1.5vh 2vw 6vh; align-items: center; justify-content: center; }
+  .imgslide img { max-width: 100%; max-height: 100%; min-height: 0; object-fit: contain; flex: 1; }
+  .imgslide .note { margin-top: 1vh; width: 100%; box-sizing: border-box; }
+  .photos { flex: 1; display: flex; gap: 4vw; justify-content: center; align-items: flex-start; min-height: 0; }
+  .photos figure { margin: 0; text-align: center; font-size: clamp(18px, 2.7vw, 4.6vh); line-height: 1.35; }
+  .photos img { height: 44vh; width: auto; border: 0.3vh solid #000; display: block; margin: 0 auto 1.5vh; }
   .note { margin-top: auto; font-size: clamp(16px, 2.5vw, 4.2vh); border: 0.4vh dashed #000; padding: 1.2vh 1.5vw; }
   .qr-wrap { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4vw; }
   #qr svg { width: min(62vh, 45vw); height: auto; display: block; }
@@ -36,6 +42,9 @@
     ol, ul, .qr-text { font-size: 20pt; }
     .note { font-size: 15pt; }
     .row ol { font-size: 17pt; }
+    .imgslide img { max-height: 180mm; }
+    .photos img { height: 95mm; }
+    .photos figure { font-size: 17pt; }
     .fig svg { max-height: 130mm; }
     #qr svg { width: 120mm; }
     .qr-url { font-size: 9pt; }
@@ -45,47 +54,30 @@
 </head>
 <body>
 
-<section class="slide">
-  <h1>1　架設與對準 0</h1>
-  <div class="row"><ol>
-    <li>三件<b>排成一直線</b>，量 <b>L（約 1000 mm）</b>照實記下</li>
-    <li>屏幕紙橫放<b>插到底</b>，灰色段藏進槽裡</li>
-    <li>先<b>不放狹縫片</b>，光點對準<b>紅色 0 線</b></li>
-    <li>放入狹縫片（<b>縫直立</b>），微調夾座讓光打在縫上</li>
-    <li>建議：雙縫 <b>d = 0.2</b>；單縫 <b>a = 0.1 或 0.05</b> mm</li>
-  </ol><div class="fig"><svg viewBox="0 0 520 420" font-family="Noto Sans CJK TC, Microsoft JhengHei, sans-serif" aria-label="架設示意圖">
-  <text x="260" y="26" font-size="24" font-weight="700" text-anchor="middle">側視圖</text>
-  <line x1="20" y1="230" x2="500" y2="230" stroke="#000" stroke-width="3"/>
-  <rect x="30" y="160" width="90" height="40" fill="#fff" stroke="#000" stroke-width="3"/>
-  <rect x="60" y="200" width="30" height="30" fill="#fff" stroke="#000" stroke-width="3"/>
-  <text x="75" y="150" font-size="22" text-anchor="middle">雷射</text>
-  <rect x="215" y="140" width="14" height="90" fill="#fff" stroke="#000" stroke-width="3"/>
-  <rect x="200" y="210" width="44" height="20" fill="#fff" stroke="#000" stroke-width="3"/>
-  <text x="222" y="128" font-size="22" text-anchor="middle">狹縫片夾座</text>
-  <rect x="440" y="100" width="10" height="130" fill="#ddd" stroke="#000" stroke-width="3"/>
-  <rect x="425" y="210" width="40" height="20" fill="#fff" stroke="#000" stroke-width="3"/>
-  <text x="445" y="88" font-size="22" text-anchor="middle">屏幕架</text>
-  <line x1="120" y1="180" x2="440" y2="180" stroke="#000" stroke-width="3" stroke-dasharray="10 6"/>
-  <text x="330" y="170" font-size="18" text-anchor="middle">雷射光（排成一直線）</text>
-  <line x1="222" y1="260" x2="445" y2="260" stroke="#000" stroke-width="2.5"/>
-  <polygon points="222,260 236,253 236,267"/><polygon points="445,260 431,253 431,267"/>
-  <line x1="222" y1="240" x2="222" y2="275" stroke="#000" stroke-width="2"/>
-  <line x1="445" y1="240" x2="445" y2="275" stroke="#000" stroke-width="2"/>
-  <text x="333" y="292" font-size="24" font-weight="700" text-anchor="middle">L ≈ 1000 mm</text>
-  <text x="260" y="330" font-size="22" font-weight="700" text-anchor="middle">換縫：夾座左右平移約 8 mm</text>
-  <rect x="150" y="345" width="220" height="56" fill="#fff" stroke="#000" stroke-width="3"/>
-  <line x1="215" y1="352" x2="215" y2="394" stroke="#000" stroke-width="4"/>
-  <line x1="260" y1="352" x2="260" y2="394" stroke="#000" stroke-width="4"/>
-  <line x1="305" y1="352" x2="305" y2="394" stroke="#000" stroke-width="4"/>
-  <text x="260" y="418" font-size="16" text-anchor="middle">狹縫片：三條縫，雷射打中間那條</text>
-  <line x1="390" y1="373" x2="470" y2="373" stroke="#000" stroke-width="3"/><polygon points="480,373 466,365 466,381"/>
-  <line x1="130" y1="373" x2="50" y2="373" stroke="#000" stroke-width="3"/><polygon points="40,373 54,365 54,381"/>
-</svg></div></div>
-  <p class="note">⚠️ 雷射不可以對著眼睛，也不可以對著同學。</p>
+<section class="slide imgslide">
+  <img src="img/setup.png" alt="架設：雷射、狹縫片、屏幕三件排成一直線，L 約 1000 mm">
+  <p class="note">⚠️ 雷射不可以對著眼睛，也不可以對著同學。先不放狹縫片，讓光點對準紅色 0 線。</p>
+</section>
+
+<section class="slide imgslide">
+  <img src="img/screen-align.png" alt="屏幕紙插到底，光點落在紅色 0 線上">
+</section>
+
+<section class="slide imgslide">
+  <img src="img/slit-shift.png" alt="換縫：整個狹縫片夾座左右平移約 8 mm">
 </section>
 
 <section class="slide">
-  <h1>2　雙狹縫怎麼量</h1>
+  <h1>建議用哪幾條縫</h1>
+  <div class="photos">
+    <figure><img src="img/slit-double.jpg" alt="雙縫片，印有 0.2、0.3、0.45"><b>雙縫：d = 0.2 mm</b><br>進階：0.3、0.45</figure>
+    <figure><img src="img/slit-single.jpg" alt="單縫片，印有 0.05、0.1、0.2"><b>單縫：a = 0.1 或 0.05 mm</b><br>進階：0.2</figure>
+  </div>
+  <p class="note">先看片子上印的數字，再決定夾座往哪邊平移。</p>
+</section>
+
+<section class="slide">
+  <h1>雙狹縫怎麼量</h1>
   <div class="row"><ol>
     <li>中央亮紋對準 <b>0</b></li>
     <li>用鉛筆點出 <b>第 0 條到第 n 條</b>亮紋（一般 <b>n = 10</b>）</li>
@@ -109,7 +101,7 @@
 </section>
 
 <section class="slide">
-  <h1>3　單狹縫怎麼量</h1>
+  <h1>單狹縫怎麼量</h1>
   <div class="row"><ol>
     <li>中央亮紋對準 <b>0</b></li>
     <li>在中央亮紋<b>兩側的第 1 條暗紋</b>各點一個記號</li>
@@ -133,7 +125,7 @@
 </section>
 
 <section class="slide">
-  <h1>4　先寫紙本，再輸入網頁</h1>
+  <h1>先寫紙本，再輸入網頁</h1>
   <div class="row"><ol>
     <li>數據先寫在<b>分組紀錄表</b></li>
     <li>自己算出 <b>λ = ＿＿ mm = ＿＿ nm</b></li>
@@ -161,7 +153,7 @@
 </section>
 
 <section class="slide">
-  <h1>5　掃描開啟實驗紀錄網頁</h1>
+  <h1>掃描開啟實驗紀錄網頁</h1>
   <div class="qr-wrap">
     <div id="qr" aria-label="實驗紀錄網頁的 QR code"></div>
     <div class="qr-text">
