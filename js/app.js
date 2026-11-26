@@ -10,13 +10,40 @@
   var fmt = function (v, n) { return Number(v).toFixed(n); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); };
 
+  var COLOR_CAPTION = (window.SlitSettings && SlitSettings.COLOR_CAPTION) || {
+    red: '紅光（650 nm 或 635 nm）',
+    green: '綠光（532 nm 或 520 nm）'
+  };
   function fillColorLabels() {
-    var refs = C.getLaserRefs(), labels = C.getLaserLabels();
     $$('[data-color-label]').forEach(function (el) {
       var c = el.getAttribute('data-color-label');
-      el.textContent = (labels[c] || c) + '（' + refs[c] + ' nm）';
+      el.textContent = COLOR_CAPTION[c] || c;
     });
   }
+
+  // 從網址 #c= 讀老師設定；失敗則友善提示並用預設
+  var activeSettings = null;
+  (function loadTeacherSettings() {
+    var S = window.SlitSettings;
+    if (!S) return;
+    var parsed = S.fromHash(location.hash);
+    var box = document.getElementById('settingsBanner');
+    if (!parsed.ok) {
+      if (box) {
+        box.hidden = false;
+        box.className = 'banner err';
+        box.textContent = '設定連結無效或已損壞，已改用預設設定。請向老師重新取得連結。';
+      }
+      return;
+    }
+    if (!parsed.settings) return;
+    activeSettings = parsed.settings;
+    window.SLIT_ACTIVE_SETTINGS = activeSettings;
+    if (parsed.settings.warnings && parsed.settings.warnings.length && box) {
+      box.hidden = false;
+      box.textContent = parsed.settings.warnings.join(' ');
+    }
+  })();
 
   // ---- 本機儲存 ----
   function loadRecords() { try { return JSON.parse(localStorage.getItem(KEY_RECORDS)) || []; } catch (e) { return []; } }
@@ -113,7 +140,6 @@
     h += '<div class="big">正確結果：' + fmt(r.lambdaNm, 1) + ' nm</div>';
     if (r.match) h += '<div class="ok">✓ 相符（允許 ±' + r.matchTolPct + '% 的四捨五入誤差）</div>';
     else h += '<div class="ng">✗ 不相符（允許 ±' + r.matchTolPct + '% 的四捨五入誤差）</div>';
-    h += '<div>相對' + esc(r.colorLabel) + '參考值 ' + r.lambda0 + ' nm，誤差 = ' + fmt(r.errorPct, 2) + ' %</div>';
     if (r.warning) h += '<div class="warn">⚠️ ' + esc(r.warning) + '</div>';
     h += otherColorHint(panel, r);
     box.innerHTML = h;
@@ -149,6 +175,44 @@
   }
 
   // ---- 儲存一筆 ----
+  function setSaveMsg(panel, kind, text) {
+    var el = $('[data-save-msg]', panel);
+    if (!el) return;
+    el.hidden = !text;
+    el.className = 'save-msg' + (kind ? ' ' + kind : '');
+    el.textContent = text || '';
+  }
+  function basicFillHint(errors) {
+    var labels = [], seen = {};
+    function add(lab) { if (!seen[lab]) { seen[lab] = true; labels.push(lab); } }
+    (errors || []).forEach(function (e) {
+      if (e.indexOf('姓名') === 0) add('姓名');
+      else if (e.indexOf('班級') === 0) add('班級');
+      else if (e.indexOf('座號與組別') === 0) add('座號或組別');
+      else if (e.indexOf('座號') === 0) add('座號');
+      else if (e.indexOf('日期') === 0) add('日期');
+      else if (e.indexOf('照片編號') === 0) add('照片編號');
+    });
+    return labels.length ? ('請先在最上方填好：' + labels.join('、')) : '請先在最上方填好基本資料。';
+  }
+  function firstBasicField(errors) {
+    var order = [
+      { id: 'name', hit: function (e) { return e.indexOf('姓名') === 0; } },
+      { id: 'className', hit: function (e) { return e.indexOf('班級') === 0; } },
+      { id: 'seat', hit: function (e) { return e.indexOf('座號') === 0; } },
+      { id: 'group', hit: function (e) { return e.indexOf('組別') === 0; } },
+      { id: 'date', hit: function (e) { return e.indexOf('日期') === 0; } }
+    ];
+    var i, j;
+    for (i = 0; i < order.length; i++) {
+      for (j = 0; j < errors.length; j++) {
+        if (order[i].hit(errors[j])) return document.getElementById(order[i].id);
+      }
+    }
+    var photoErr = (errors || []).some(function (e) { return e.indexOf('照片編號') === 0; });
+    if (photoErr) return document.querySelector('.panel:not([hidden]) input[data-f="photoNo"]');
+    return null;
+  }
   function saveRecord(panel) {
     var basic = getBasic(), inp = readPanel(panel);
     basic.photoNo = inp.photoNo || '';
@@ -156,8 +220,19 @@
     var ul = $('#basicErrors');
     ul.innerHTML = vb.errors.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('');
     var r = checkPanel(panel);
-    if (!vb.ok) { $('#basic').scrollIntoView({ behavior: 'smooth' }); return; }
-    if (!r.ok) { alert('量測資料或你算出的波長有誤，請先修正再儲存。'); return; }
+    if (!vb.ok) {
+      setSaveMsg(panel, 'ng', basicFillHint(vb.errors));
+      var field = firstBasicField(vb.errors);
+      if (field) {
+        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (typeof field.focus === 'function') field.focus();
+      }
+      return;
+    }
+    if (!r.ok) {
+      setSaveMsg(panel, 'ng', '量測資料或你算出的波長有誤，請先修正再儲存。');
+      return;
+    }
     var type = panel.dataset.type;
     var rec = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
@@ -168,12 +243,15 @@
       L: r.L, studentLambda: r.studentLambda, lambdaNm: r.lambdaNm,
       match: r.match, errorPct: r.errorPct, warning: r.warning
     };
+    var slitPick = (inp.slitPick || '').trim();
+    rec.slitId = (slitPick && slitPick !== '__other__') ? slitPick : '';
     if (type === 'double') { rec.d = r.d; rec.n = r.n; rec.total = r.total; rec.dy = r.dy; }
     else { rec.a = r.a; rec.W = r.W; }
     var list = loadRecords(); list.unshift(rec); saveRecords(list);
     renderList();
     // 儲存後再畫一次結果，讓「再記一筆另一色」或比較提示更新
     renderVerified(panel, r);
+    setSaveMsg(panel, 'ok', '已儲存，請看下方紀錄');
     $('#sendStatus').textContent = '已儲存在這台裝置。';
   }
 
@@ -196,7 +274,6 @@
         '<div class="meta">' + who + '</div>' +
         '<div>紅光 λ = ' + fmt(c.redLambda, 1) + ' nm</div>' +
         '<div>綠光 λ = ' + fmt(c.greenLambda, 1) + ' nm</div>' +
-        '<div>綠/紅比值 = ' + fmt(c.ratio, 3) + '</div>' +
         '<div class="big">' + longerText(c) + '</div>' +
         '</div>';
     }).join('');
@@ -210,9 +287,8 @@
       var matched = r.match ? '<span class="st sent">相符</span>' : '<span class="st failed">不相符</span>';
       return '<div class="rec" data-id="' + esc(r.id) + '">' +
         '<div><b>' + TYPE_NAME[r.type] + '　' + esc(r.colorLabel || r.color) + '</b>　你的答案 ' + fmt(r.studentLambda, 1) + ' nm　正確 ' + fmt(r.lambdaNm, 1) + ' nm　' + matched +
-        '　誤差 ' + fmt(r.errorPct, 2) + ' %' +
         (r.warning ? '　<span style="color:#b35c00">⚠️</span>' : '') + '</div>' +
-        '<div class="meta">' + who + '　' + esc(r.date) + (r.photoNo ? '　照片 ' + esc(r.photoNo) : '') + '</div>' +
+        '<div class="meta">' + who + (r.slitId ? '　狹縫片 ' + esc(r.slitId) : '') + '　' + esc(r.date) + (r.photoNo ? '　照片 ' + esc(r.photoNo) : '') + '</div>' +
         '<div><span class="st ' + r.status + '">' + ST_NAME[r.status] + '</span></div>' +
         '<div style="margin-top:4px">' + (r.status !== 'sent' && SCRIPT_URL ? '<button data-act="send">送出這筆</button>' : '') +
         '<button data-act="del">刪除</button></div></div>';
@@ -251,11 +327,11 @@
   function downloadCSV() {
     var list = loadRecords();
     if (!list.length) { alert('還沒有紀錄可以下載。'); return; }
-    var headers = ['實驗', '姓名', '班級', '座號', '組別', '日期', '照片編號', '雷射顏色', '標示波長λ0(nm)', '狹縫間距d(mm)', '縫寬a(mm)',
+    var headers = ['實驗', '姓名', '班級', '座號', '組別', '日期', '照片編號', '狹縫片編號', '雷射顏色', '標示波長λ0(nm)', '狹縫間距d(mm)', '縫寬a(mm)',
       'L(mm)', '量了幾個間距n', '第0條到第n條亮紋總長(mm)', 'Δy(mm)', 'W(mm)', '學生算出的波長(nm)', '正確波長λ(nm)', '答案相符', '誤差(%)', '警告', '儲存時間', '送出狀態'];
     var rows = list.map(function (r) {
       var D = r.type === 'double';
-      return [TYPE_NAME[r.type], r.name, r.className, r.seat, r.group, r.date, r.photoNo, r.colorLabel || r.color, r.lambda0,
+      return [TYPE_NAME[r.type], r.name, r.className, r.seat, r.group, r.date, r.photoNo, r.slitId || '', r.colorLabel || r.color, r.lambda0,
         D ? r.d : '', D ? '' : r.a, r.L, D ? r.n : '', D ? r.total : '', D ? fmt(r.dy, 4) : '', D ? '' : r.W,
         fmt(r.studentLambda, 1), fmt(r.lambdaNm, 1), r.match ? '相符' : '不相符', fmt(r.errorPct, 2), r.warning || '',
         new Date(r.savedAt).toLocaleString('zh-TW', { hour12: false }), ST_NAME[r.status]];
@@ -269,18 +345,98 @@
   }
 
   // ---- 分頁 ----
+  function hasConfigHash() {
+    return typeof location.hash === 'string' && /(^#|&)c=/.test(location.hash);
+  }
   function showTab(name) {
     $$('.tabs button').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === name)); });
     $$('.panel').forEach(function (p) { p.hidden = p.dataset.type !== name; });
   }
 
+  function setupSlitPicker(panel, slits) {
+    var S = window.SlitSettings;
+    var wrap = $('.slit-pick', panel);
+    var sel = $('select[data-f="slitPick"]', panel);
+    var type = panel.dataset.type;
+    var field = type === 'double' ? 'd' : 'a';
+    var inp = $('input[data-f="' + field + '"]', panel);
+    if (!wrap || !sel) return;
+    if (!slits || !slits.length) { wrap.hidden = true; if (inp) inp.readOnly = false; return; }
+    wrap.hidden = false;
+    sel.innerHTML = '<option value="">請選擇</option>' +
+      slits.map(function (s) {
+        return '<option value="' + esc(s.id) + '">' + esc(S.slitOptionLabel(s)) + '</option>';
+      }).join('') +
+      '<option value="__other__">其他／自己填</option>';
+    function applyPick() {
+      var v = sel.value, hit = null;
+      slits.forEach(function (s) { if (s.id === v) hit = s; });
+      if (hit) { inp.value = (S.formatSlitValue ? S.formatSlitValue(hit.value) : String(hit.value)); inp.readOnly = true; }
+      else { inp.readOnly = false; if (v !== '__other__') /* 尚未選 */ ; }
+      onFormChange(panel);
+    }
+    sel.addEventListener('change', applyPick);
+  }
+
+  function applyTeacherSettings(cfg) {
+    if (!cfg) {
+      var foot = $('#pageFooter');
+      if (foot && !foot.querySelector('.teacher-link')) {
+        foot.insertAdjacentHTML('beforeend', '　<a class="teacher-link" href="teacher.html">老師設定</a>');
+      }
+      return;
+    }
+    if (cfg.scriptUrl) SCRIPT_URL = cfg.scriptUrl;
+    if (cfg.teacherName) {
+      var el = $('#courseName');
+      if (el) { el.hidden = false; el.textContent = cfg.teacherName; }
+    }
+    var colors = (window.SlitSettings && SlitSettings.allowedColors(cfg)) || ['red', 'green'];
+    $$('.choices label').forEach(function (lab) {
+      var inp = lab.querySelector('input[data-f="color"]');
+      if (!inp) return;
+      var on = colors.indexOf(inp.value) >= 0;
+      lab.hidden = !on;
+      if (!on) inp.checked = false;
+    });
+    if (colors.length === 1) {
+      $$('input[data-f="color"][value="' + colors[0] + '"]').forEach(function (el) { el.checked = true; });
+    }
+    var exps = cfg.experiments || ['double', 'single'];
+    $$('.tabs button').forEach(function (b) {
+      b.hidden = exps.indexOf(b.dataset.tab) < 0;
+    });
+    if (cfg.suggestedL) {
+      $$('input[data-f="L"]').forEach(function (el) { if (!el.value) el.value = String(cfg.suggestedL); });
+    }
+    var tip = $('.tip');
+    if (tip) {
+      var parts = ['💡 建議 L 約 ' + (cfg.suggestedL ? (cfg.suggestedL / 10 >= 100 ? (cfg.suggestedL / 1000) + ' m' : cfg.suggestedL + ' mm') : '1 m') + '，讓條紋夠寬好量。'];
+      if (colors.length === 2) parts.push('每組請紅光、綠光都做，方便比較波長。');
+      tip.textContent = parts.join(' ');
+    }
+    $$('.panel').forEach(function (p) {
+      var list = window.SlitSettings ? SlitSettings.slitsFor(cfg, p.dataset.type) : [];
+      setupSlitPicker(p, list);
+    });
+  }
+
   // ---- 初始化 ----
   fillColorLabels();
+  applyTeacherSettings(activeSettings);
   initBasic();
-  $$('.tabs button').forEach(function (b) { b.addEventListener('click', function () { showTab(b.dataset.tab); history.replaceState(null, '', '#' + b.dataset.tab); }); });
-  showTab(location.hash === '#single' ? 'single' : 'double');
+  $$('.tabs button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      showTab(b.dataset.tab);
+      if (!hasConfigHash()) history.replaceState(null, '', '#' + b.dataset.tab);
+    });
+  });
+  var startTab = 'double';
+  if (activeSettings && activeSettings.experiments && activeSettings.experiments.indexOf('double') < 0) startTab = 'single';
+  else if (!activeSettings && location.hash === '#single') startTab = 'single';
+  showTab(startTab);
   $$('.panel').forEach(function (p) {
-    $$('input', p).forEach(function (el) {
+    $$('input, select', p).forEach(function (el) {
       el.addEventListener('input', function () { onFormChange(p); });
       el.addEventListener('change', function () { onFormChange(p); });
     });
@@ -288,10 +444,15 @@
     $('.save', p).addEventListener('click', function () { saveRecord(p); });
     $('.clear', p).addEventListener('click', function () {
       ['d', 'a', 'L', 'total', 'W', 'studentLambda', 'photoNo'].forEach(function (f) {
-        $$('input[data-f="' + f + '"]', p).forEach(function (el) { el.value = ''; el.classList.remove('bad'); });
+        $$('input[data-f="' + f + '"]', p).forEach(function (el) { el.value = ''; el.readOnly = false; el.classList.remove('bad'); });
       });
       $$('input[data-f="n"]', p).forEach(function (el) { el.value = '10'; el.classList.remove('bad'); });
+      $$('select[data-f="slitPick"]', p).forEach(function (el) { el.value = ''; });
+      if (activeSettings && activeSettings.suggestedL) {
+        $$('input[data-f="L"]', p).forEach(function (el) { el.value = String(activeSettings.suggestedL); });
+      }
       p.dataset.checked = '';
+      setSaveMsg(p, '', '');
       updateNLabel(p);
       renderIdle(p);
     });

@@ -12,12 +12,25 @@
     }
     return null;
   }
+  function refsFromTeacherSettings() {
+    if (typeof SLIT_ACTIVE_SETTINGS === 'undefined' || !SLIT_ACTIVE_SETTINGS) return null;
+    var mapped = {}, list = SLIT_ACTIVE_SETTINGS.lasers || [];
+    list.forEach(function (L) {
+      if (L && (L.color === 'red' || L.color === 'green') && isFinite(Number(L.lambda0))) mapped[L.color] = Number(L.lambda0);
+    });
+    return Object.keys(mapped).length ? mapped : null;
+  }
   function getLaserRefs() {
+    var fromSet = refsFromTeacherSettings();
+    if (fromSet) return fromSet;
     if (typeof LASER_REF !== 'undefined') return LASER_REF;
     var cfg = nodeConfig();
     return (cfg && cfg.LASER_REF) ? cfg.LASER_REF : DEFAULT_REF;
   }
   function getLaserLabels() {
+    var refs = getLaserRefs(), labels = {};
+    Object.keys(refs).forEach(function (c) { labels[c] = (c === 'green') ? '綠光' : '紅光'; });
+    if (refsFromTeacherSettings()) return labels;
     if (typeof LASER_LABEL !== 'undefined') return LASER_LABEL;
     var cfg = nodeConfig();
     return (cfg && cfg.LASER_LABEL) ? cfg.LASER_LABEL : DEFAULT_LABEL;
@@ -54,7 +67,9 @@
     var s = (raw === undefined || raw === null) ? '' : String(raw).trim();
     if (s === '') return { ok: false, error: '雷射顏色：請選擇' };
     if (s !== 'red' && s !== 'green') return { ok: false, error: '雷射顏色：請選擇紅光或綠光' };
-    return { ok: true, value: s, label: getLaserLabels()[s], lambda0: getLaserRefs()[s] };
+    var refs = getLaserRefs();
+    if (refs[s] === undefined) return { ok: false, error: '雷射顏色：請選擇老師設定的顏色' };
+    return { ok: true, value: s, label: getLaserLabels()[s], lambda0: refs[s] };
   }
 
   function errorPercent(lambda, lambda0) { return Math.abs(lambda - lambda0) / lambda0 * 100; }
@@ -83,7 +98,7 @@
     return { lambdaMm: lambdaMm, lambdaNm: lambdaNm };
   }
 
-  // 逐步算法（代入學生的量測值、含單位換算）。之後若要改成只顯示對錯，仍可重用這段。
+  // 逐步算法（代入學生的量測值）。之後若要改成只顯示對錯，仍可重用這段。
   function stepsDouble(d, L, total, n, dy, lambdaMm, lambdaNm) {
     return [
       'n = ' + n + '（量了 ' + n + ' 個間距）',
@@ -91,8 +106,7 @@
       'λ = d × Δy / L',
       '　= ' + fmtSmart(d, 6) + ' × ' + fmtSmart(dy, 6) + ' ÷ ' + fmtSmart(L, 6),
       '　= ' + fmtSmart(lambdaMm, 10) + ' mm',
-      '單位換算：1 mm = 10⁶ nm = 1 000 000 nm',
-      'λ = ' + fmtSmart(lambdaMm, 10) + ' × 1 000 000 = ' + Number(lambdaNm).toFixed(1) + ' nm'
+      'λ = ' + fmtSmart(lambdaMm, 10) + ' mm = ' + Number(lambdaNm).toFixed(1) + ' nm'
     ];
   }
   function stepsSingle(a, L, W, lambdaMm, lambdaNm) {
@@ -100,8 +114,7 @@
       'λ = a × W / (2 × L)',
       '　= ' + fmtSmart(a, 6) + ' × ' + fmtSmart(W, 6) + ' ÷ (2 × ' + fmtSmart(L, 6) + ')',
       '　= ' + fmtSmart(lambdaMm, 10) + ' mm',
-      '單位換算：1 mm = 10⁶ nm = 1 000 000 nm',
-      'λ = ' + fmtSmart(lambdaMm, 10) + ' × 1 000 000 = ' + Number(lambdaNm).toFixed(1) + ' nm'
+      'λ = ' + fmtSmart(lambdaMm, 10) + ' mm = ' + Number(lambdaNm).toFixed(1) + ' nm'
     ];
   }
 

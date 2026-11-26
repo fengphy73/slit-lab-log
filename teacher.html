@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>老師設定　狹縫干涉繞射實驗紀錄</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <h1>老師設定</h1>
+  <p class="sub">產生專屬的學生實驗紀錄連結，資料進您自己的 Google 試算表</p>
+</header>
+<main>
+  <section class="card">
+    <h2>五分鐘設定試算表（可選）</h2>
+    <ol class="steps-ol">
+      <li>打開 <a href="https://sheets.google.com" target="_blank" rel="noopener">sheets.google.com</a>，建立空白試算表，名稱可改成「狹縫實驗紀錄」。</li>
+      <li>在試算表選單按「擴充功能」→「Apps Script」。</li>
+      <li>刪掉預設程式，按下方「複製接收程式」，貼進去並儲存。</li>
+      <li>右上角「部署」→「新增部署作業」→類型選「網頁應用程式」。執行身分選「我」，誰可以存取選「所有人」，再按部署並授權。</li>
+      <li>複製網址（結尾是 <code>/exec</code>），貼到下面的欄位。若暫時不設試算表，可留空，學生仍可把紀錄存在手機並下載 CSV。</li>
+    </ol>
+    <div class="actions">
+      <button type="button" id="copyGs">複製接收程式</button>
+    </div>
+    <p class="hint" id="copyGsStatus"></p>
+    <p class="warn-note">學生的姓名只會進您自己的試算表。產生的學生連結裡含有 /exec 網址，任何拿到連結的人都能送資料進來，請不要把學生連結公開張貼到網路上。</p>
+  </section>
+
+  <section class="card">
+    <h2>您的設定</h2>
+    <label>老師或課程名稱（顯示在學生頁頂端，可留空）
+      <input id="teacherName" type="text" placeholder="例：王老師 物理實驗" maxlength="80">
+    </label>
+    <label>Google Apps Script 網址（/exec，可留空）
+      <input id="scriptUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+    </label>
+    <p class="hint">必須是 https://script.google.com/ 開頭。</p>
+
+    <h3>雷射筆</h3>
+    <p class="hint">可只勾一種顏色。標示波長會寫進老師收到的試算表；學生畫面只標示常見值，不顯示與參考值的誤差。</p>
+    <label class="checkrow"><input type="checkbox" id="laserRed" checked> 紅光，標示波長
+      <input id="lambdaRed" type="text" inputmode="decimal" value="650" class="inline-num"> nm
+    </label>
+    <label class="checkrow"><input type="checkbox" id="laserGreen" checked> 綠光，標示波長
+      <input id="lambdaGreen" type="text" inputmode="decimal" value="532" class="inline-num"> nm
+    </label>
+
+    <h3>要開哪些實驗</h3>
+    <label class="checkrow"><input type="checkbox" id="expDouble" checked> 雙狹縫干涉</label>
+    <label class="checkrow"><input type="checkbox" id="expSingle" checked> 單狹縫繞射</label>
+
+    <label>建議縫到屏距離 L（mm）
+      <input id="suggestedL" type="text" inputmode="decimal" value="1000">
+    </label>
+
+    <h3>狹縫片清單（可留空）</h3>
+    <p class="hint">有填的話，學生頁會用下拉選單帶入 d 或 a，並保留「其他／自己填」。</p>
+    <div class="table-wrap">
+      <table class="slit-table" id="slitTable">
+        <thead>
+          <tr><th>編號</th><th>類型</th><th>標示值 (mm)</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="actions">
+      <button type="button" id="addSlit">新增一列</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="actions">
+      <button type="button" id="generate" class="primary">產生學生連結</button>
+    </div>
+    <ul class="errors" id="genErrors"></ul>
+    <div id="resultBox" hidden>
+      <h2>學生連結</h2>
+      <textarea id="studentUrl" rows="4" readonly></textarea>
+      <div class="actions">
+        <button type="button" id="copyUrl">複製連結</button>
+      </div>
+      <p class="hint" id="copyUrlStatus"></p>
+      <div id="qr" class="qr" aria-label="學生連結的 QR code"></div>
+      <p class="hint">請用手機掃描或把連結傳給學生。請勿公開張貼到網路。</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>從既有學生連結讀回設定</h2>
+    <label>貼上先前產生的學生連結
+      <textarea id="importUrl" rows="3" placeholder="https://……/index.html#c=……"></textarea>
+    </label>
+    <div class="actions">
+      <button type="button" id="importBtn">讀取設定</button>
+    </div>
+    <p class="hint" id="importStatus"></p>
+  </section>
+</main>
+<footer>
+  QR code 產生程式採用 Kazuhiko Arase 的 QR Code Generator for JavaScript（MIT 授權），見 <a href="js/LICENSE-qrcode-generator.txt">授權說明</a>。
+  「QR Code」是 DENSO WAVE INCORPORATED 的註冊商標。
+</footer>
+<script src="js/settings.js"></script>
+<script src="js/qrcode.js"></script>
+<script src="js/teacher.js"></script>
+</body>
+</html>

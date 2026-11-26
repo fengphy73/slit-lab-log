@@ -10,8 +10,10 @@
 <header>
   <h1>狹縫干涉繞射實驗紀錄</h1>
   <p class="sub">請填姓名、班級，以及座號或組別</p>
+  <p class="course" id="courseName" hidden></p>
 </header>
 <main>
+  <div id="settingsBanner" class="banner" hidden></div>
   <section class="card" id="basic">
     <h2>基本資料</h2>
     <div class="grid2">
@@ -42,6 +44,9 @@
         <label><input type="radio" name="color-double" data-f="color" value="green"> <span data-color-label="green">綠光</span></label>
       </div>
     </fieldset>
+    <label class="slit-pick" hidden>選擇狹縫片
+      <select data-f="slitPick"><option value="">請選擇</option></select>
+    </label>
     <label>填狹縫片上標示的縫間距 d（mm） <input data-f="d" type="text" inputmode="decimal" placeholder="例：0.40"></label>
     <label>縫到屏距離 L (mm) <input data-f="L" type="text" inputmode="decimal" placeholder="例：1000"></label>
     <label>量了幾個間距 n（從第 0 條算起） <input data-f="n" type="text" inputmode="numeric" value="10"></label>
@@ -55,6 +60,7 @@
       <button class="save">儲存這筆紀錄</button>
       <button class="clear">清空量測</button>
     </div>
+    <p class="save-msg" data-save-msg hidden></p>
     <div class="result" aria-live="polite"></div>
   </section>
 
@@ -68,6 +74,9 @@
         <label><input type="radio" name="color-single" data-f="color" value="green"> <span data-color-label="green">綠光</span></label>
       </div>
     </fieldset>
+    <label class="slit-pick" hidden>選擇狹縫片
+      <select data-f="slitPick"><option value="">請選擇</option></select>
+    </label>
     <label>填狹縫片上標示的縫寬 a（mm） <input data-f="a" type="text" inputmode="decimal" placeholder="例：0.10"></label>
     <label>縫到屏距離 L (mm) <input data-f="L" type="text" inputmode="decimal" placeholder="例：1000"></label>
     <label>中央亮紋寬度 W（兩側第 1 條暗紋之間）(mm) <input data-f="W" type="text" inputmode="decimal" placeholder="例：13"></label>
@@ -79,6 +88,7 @@
       <button class="save">儲存這筆紀錄</button>
       <button class="clear">清空量測</button>
     </div>
+    <p class="save-msg" data-save-msg hidden></p>
     <div class="result" aria-live="polite"></div>
   </section>
 
@@ -93,8 +103,9 @@
     <div id="recordList"></div>
   </section>
 </main>
-<footer>資料預設只存在這台裝置的瀏覽器；清除瀏覽器資料會一併刪除，請記得下載 CSV 或送出給老師。</footer>
+<footer id="pageFooter">資料預設只存在這台裝置的瀏覽器；清除瀏覽器資料會一併刪除，請記得下載 CSV 或送出給老師。</footer>
 <script src="js/config.js"></script>
+<script src="js/settings.js"></script>
 <script src="js/calc.js"></script>
 <script src="js/app.js"></script>
 </body>
