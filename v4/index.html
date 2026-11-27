@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>狹縫干涉繞射實驗紀錄</title>
+<link rel="stylesheet" href="css/style.css?v=v4a">
+</head>
+<body>
+<header>
+  <h1>狹縫干涉繞射實驗紀錄</h1>
+  <p class="sub">請填班級、座號（組別可不填），不用填姓名</p>
+  <p class="course" id="courseName" hidden></p>
+</header>
+<main>
+  <div id="settingsBanner" class="banner" hidden></div>
+  <section class="card" id="basic">
+    <h2>基本資料</h2>
+    <div class="grid2">
+      <label>班級 <input id="className" type="text" placeholder="例：201" autocomplete="off"></label>
+      <label>座號 <input id="seat" type="text" inputmode="numeric" placeholder="例：12"></label>
+      <label>組別 <input id="group" type="text" placeholder="例：3"></label>
+      <label>日期 <input id="date" type="date"></label>
+    </div>
+    <p class="hint">座號與組別至少填一個。</p>
+    <ul class="errors" id="basicErrors"></ul>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-double" data-tab="double" aria-selected="true">雙狹縫干涉</button>
+    <button role="tab" id="tab-single" data-tab="single" aria-selected="false">單狹縫繞射</button>
+  </nav>
+
+  <p class="tip">💡 建議 L 約 1 m，讓條紋夠寬好量。每組請紅光、綠光都做，方便比較波長。</p>
+
+  <!-- 雙狹縫 -->
+  <section class="card panel" id="panel-double" data-type="double">
+    <h2>雙狹縫干涉</h2>
+    <fieldset>
+      <legend>雷射顏色（必選）</legend>
+      <div class="choices">
+        <label><input type="radio" name="color-double" data-f="color" value="red"> <span data-color-label="red">紅光</span></label>
+        <label><input type="radio" name="color-double" data-f="color" value="green"> <span data-color-label="green">綠光</span></label>
+      </div>
+    </fieldset>
+    <label class="slit-pick" hidden>選擇狹縫片
+      <select data-f="slitPick"><option value="">請選擇</option></select>
+    </label>
+    <label>填狹縫片上標示的縫間距 d（mm） <input data-f="d" type="text" inputmode="decimal" placeholder="例：0.20"></label>
+    <label>縫到屏距離 L (mm) <input data-f="L" type="text" inputmode="decimal" placeholder="例：1000"></label>
+    <label>量了幾個間距 n（從第 0 條算起） <input data-f="n" type="text" inputmode="numeric" value="10"></label>
+    <p class="hint explain">n 是你量的亮紋間距個數。從中央第 0 條亮紋開始，往同一側數到第 n 條，量這段總長，再除以 n 就是一個間距 Δy。例如量了第 0 條到第 10 條，n 就是 10，不是 11。一個間距只有 1～2 mm，直接量很不準；量一長段再除以 n，誤差也跟著縮小。看不清楚 10 條時，數到看得清楚的最後一條就好，n 照實際填。</p>
+    <label>第 0 條到第 <span data-n-label>10</span> 條亮紋的總長（mm） <input data-f="total" type="text" inputmode="decimal" placeholder="例：32.5"></label>
+    <label>你算出的波長（nm） <input data-f="studentLambda" type="text" inputmode="decimal" placeholder="請自己先算再填"></label>
+    <p class="hint">請先用自己的數據算出波長再填，按「核對」後會顯示正確算法。</p>
+    <label>照片編號（選填） <input data-f="photoNo" type="text" placeholder="例：IMG_0123"></label>
+    <div class="actions">
+      <button class="check primary">核對</button>
+      <button class="save">儲存這筆紀錄</button>
+      <button class="clear">清空量測</button>
+    </div>
+    <p class="save-msg" data-save-msg hidden></p>
+    <div class="result" aria-live="polite"></div>
+  </section>
+
+  <!-- 單狹縫 -->
+  <section class="card panel" id="panel-single" data-type="single" hidden>
+    <h2>單狹縫繞射</h2>
+    <fieldset>
+      <legend>雷射顏色（必選）</legend>
+      <div class="choices">
+        <label><input type="radio" name="color-single" data-f="color" value="red"> <span data-color-label="red">紅光</span></label>
+        <label><input type="radio" name="color-single" data-f="color" value="green"> <span data-color-label="green">綠光</span></label>
+      </div>
+    </fieldset>
+    <label class="slit-pick" hidden>選擇狹縫片
+      <select data-f="slitPick"><option value="">請選擇</option></select>
+    </label>
+    <label>填狹縫片上標示的縫寬 a（mm） <input data-f="a" type="text" inputmode="decimal" placeholder="例：0.10"></label>
+    <label>縫到屏距離 L (mm) <input data-f="L" type="text" inputmode="decimal" placeholder="例：1000"></label>
+    <label>中央亮紋寬度 W（兩側第 1 條暗紋之間）(mm) <input data-f="W" type="text" inputmode="decimal" placeholder="例：13"></label>
+    <label>你算出的波長（nm） <input data-f="studentLambda" type="text" inputmode="decimal" placeholder="請自己先算再填"></label>
+    <p class="hint">請先用自己的數據算出波長再填，按「核對」後會顯示正確算法。</p>
+    <label>照片編號（選填） <input data-f="photoNo" type="text" placeholder="例：IMG_0124"></label>
+    <div class="actions">
+      <button class="check primary">核對</button>
+      <button class="save">儲存這筆紀錄</button>
+      <button class="clear">清空量測</button>
+    </div>
+    <p class="save-msg" data-save-msg hidden></p>
+    <div class="result" aria-live="polite"></div>
+  </section>
+
+  <section class="card" id="records">
+    <h2>我的紀錄（存在這台裝置）</h2>
+    <div class="actions">
+      <button id="sendAll" class="primary">送出給老師</button>
+      <button id="downloadCsv">下載 CSV</button>
+    </div>
+    <p class="hint" id="sendStatus"></p>
+    <div id="compareBox"></div>
+    <div id="recordList"></div>
+  </section>
+</main>
+<footer id="pageFooter">不用填姓名，只填座號。資料先存在這台裝置；按「送出給老師」後，只有班級、座號、組別和實驗數據會送到老師的試算表，僅供上課使用。看到「✅ 送出成功」才代表老師收到了。</footer>
+<script src="js/config.js?v=v4a"></script>
+<script src="js/settings.js?v=v4a"></script>
+<script src="js/calc.js?v=v4a"></script>
+<script src="js/app.js?v=v4a"></script>
+</body>
+</html>

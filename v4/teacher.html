@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>班級清單　狹縫干涉繞射實驗紀錄</title>
+<link rel="stylesheet" href="css/style.css?v=v4a">
+</head>
+<body>
+<header>
+  <h1>班級清單</h1>
+  <p class="sub">一班一張卡片：學生連結、上課簡報、數據都在這裡</p>
+</header>
+<main>
+  <!-- v4：不用自己設定試算表，用管理者給的「我的教師頁」連結打開 -->
+  <section class="card setup" id="setupCard" hidden>
+    <h2>請用「我的教師頁」連結打開</h2>
+    <p>這個網站不用自己設定試算表或程式。請向管理者索取您的<b>「我的教師頁」連結</b>，用它打開這一頁，就能直接按「＋新增班級」。</p>
+    <p class="hint">打開一次之後，這台電腦會記住；換電腦時再打開同一個連結就好，班級清單會自動取回。</p>
+    <div class="test-result" id="testResult" hidden></div>
+  </section>
+
+  <!-- 連線狀態 -->
+  <div class="conn-bar" id="connBar" hidden></div>
+
+  <!-- 班級卡片 -->
+  <section id="listArea">
+    <div class="list-head">
+      <h2>我的班級</h2>
+      <button type="button" id="addClass" class="primary">＋新增班級</button>
+    </div>
+    <div class="card add-box" id="addBox" hidden>
+      <h3>新增班級</h3>
+      <label>班名（也是試算表分頁的名稱）
+        <input id="addName" type="text" maxlength="40" placeholder="例：301">
+      </label>
+      <label>縫的設定
+        <select id="addFrom"></select>
+      </label>
+      <ul class="errors" id="addErrors"></ul>
+      <div class="actions">
+        <button type="button" id="addOk" class="primary">建立</button>
+        <button type="button" id="addCancel">取消</button>
+      </div>
+    </div>
+    <div id="classList" class="class-list"></div>
+    <p class="hint" id="listEmpty" hidden>還沒有班級。按右上「＋新增班級」，輸入班名（例如「301」）就好。</p>
+    <details class="archived" id="archivedBox" hidden>
+      <summary id="archivedSum">已封存</summary>
+      <p class="hint">封存的班級，試算表分頁先隱藏起來，資料都在；學生照樣能送。按「還原」就回到上面。</p>
+      <div id="archivedList" class="class-list"></div>
+    </details>
+  </section>
+
+  <!-- 編輯一個課堂（沿用原本的設定表單） -->
+  <section class="card" id="editor" hidden>
+    <h2 id="editorTitle">編輯班級</h2>
+    <label>班名（改了會同時改試算表分頁名稱，資料和學生連結都不變）
+      <input id="className" type="text" maxlength="40" placeholder="例：301">
+    </label>
+
+    <h3>雷射筆</h3>
+    <p class="hint">可只勾一種顏色。標示波長會寫進老師收到的試算表；學生畫面只標示常見值，不顯示與參考值的誤差。</p>
+    <label class="checkrow"><input type="checkbox" id="laserRed" checked> 紅光，標示波長
+      <input id="lambdaRed" type="text" inputmode="decimal" value="650" class="inline-num"> nm
+      <span class="soft-hint" data-lambda-hint="red" hidden>請填 nm，例如 650</span>
+    </label>
+    <label class="checkrow"><input type="checkbox" id="laserGreen" checked> 綠光，標示波長
+      <input id="lambdaGreen" type="text" inputmode="decimal" value="532" class="inline-num"> nm
+      <span class="soft-hint" data-lambda-hint="green" hidden>請填 nm，例如 650</span>
+    </label>
+
+    <h3>要開哪些實驗</h3>
+    <label class="checkrow"><input type="checkbox" id="expDouble" checked> 雙狹縫干涉</label>
+    <label class="checkrow"><input type="checkbox" id="expSingle" checked> 單狹縫繞射</label>
+
+    <label>建議縫到屏距離 L（mm）
+      <input id="suggestedL" type="text" inputmode="decimal" value="1000">
+    </label>
+
+    <h3>狹縫片清單（可留空）</h3>
+    <p class="hint">有填的話，學生頁會用下拉選單帶入 d 或 a，並保留「其他／自己填」。預設是執行長那兩片的 6 條縫（雙縫 d = 0.2／0.3／0.45 mm，單縫 a = 0.05／0.1／0.2 mm）；用別的片子可以改或刪。</p>
+    <p class="soft-hint" id="slitHintText" hidden>單位是 mm（片子若印 µm，例如 40 µm 請填 0.04）</p>
+    <div class="table-wrap">
+      <table class="slit-table" id="slitTable">
+        <thead>
+          <tr><th>編號</th><th>類型</th><th>標示值 (mm)</th><th>標示</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="actions">
+      <button type="button" id="addSlit">新增一列</button>
+      <button type="button" id="resetSlits">換回預設 6 條縫</button>
+    </div>
+    <ul class="errors" id="editErrors"></ul>
+    <div class="actions">
+      <button type="button" id="editSave" class="primary">儲存</button>
+      <button type="button" id="editCancel">取消</button>
+    </div>
+  </section>
+
+  <!-- 老師設定與換電腦 -->
+  <section class="card" id="moreCard">
+    <h2>老師設定與換電腦</h2>
+    <label>您的名稱（顯示在學生頁頂端，不填也可以）
+      <input id="teacherName" type="text" placeholder="例：王老師" maxlength="80">
+    </label>
+    <h3>換電腦：「我的教師頁」連結</h3>
+    <p class="hint">在新電腦打開這個連結，班級清單會從您的試算表自動取回，不用再設定。連結裡有您的老師金鑰，請自己保存（例如存成書籤），不要給學生。</p>
+    <div class="actions">
+      <button type="button" id="copySetupLink">複製「我的教師頁」連結</button>
+    </div>
+    <textarea id="setupLinkOut" rows="2" readonly hidden></textarea>
+    <p class="hint" id="moreStatus"></p>
+    <p class="warn-note">學生連結任何人拿到都能送資料進來，請只發給自己的學生，不要公開張貼到網路上。</p>
+  </section>
+
+  <!-- 資料使用說明（草稿，待執行長審） -->
+  <section class="card" id="dataNotice">
+    <h2>資料使用說明（草稿）</h2>
+    <ul class="notice-list">
+      <li><b>存放位置：</b>您的試算表由本網站的管理者建立，存放在管理者的 Google 雲端硬碟，並分享給您。</li>
+      <li><b>只存座號與實驗數據：</b>班級、座號、組別、日期、量測值與計算結果；不收學生姓名、電話或 email。</li>
+      <li><b>用途：</b>僅供課堂教學與學習評量，不做其他用途，也不提供給第三方。</li>
+      <li><b>刪除：</b>您可以隨時請管理者刪除某一班或全部資料，也可以自己刪除試算表裡的列。</li>
+      <li><b>保存期限：</b>建議學期結束後一年內刪除。</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>上課前列印（A4）</h2>
+    <div class="print-links">
+      <ul>
+        <li><a href="print/分組紀錄表_A4.pdf?v=20261127" target="_blank" rel="noopener">分組紀錄表</a>：每組一張，先寫紙本再輸入網頁。</li>
+        <li><a href="print/屏幕量測紙_A4.pdf?v=20261127" target="_blank" rel="noopener">A4 屏幕量測紙</a>：每組一張，插在屏幕架上，對齊雷射光架 v1.3.0。<br>
+          <b>列印時選「實際大小／100%」，不要選「符合頁面」。</b>印好後用直尺量紙上的 100 mm 校正線，確認長度對。</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+<footer>
+  QR code 產生程式採用 Kazuhiko Arase 的 QR Code Generator for JavaScript（MIT 授權），見 <a href="js/LICENSE-qrcode-generator.txt">授權說明</a>。
+  「QR Code」是 DENSO WAVE INCORPORATED 的註冊商標。
+</footer>
+<script src="js/settings.js?v=v4a"></script>
+<script src="js/classrooms.js?v=v4a"></script>
+<script src="js/teacher.js?v=v4a"></script>
+</body>
+</html>

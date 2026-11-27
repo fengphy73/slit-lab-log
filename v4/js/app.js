@@ -1,0 +1,629 @@
+// 狹縫干涉繞射實驗紀錄 — 網頁互動
+(function () {
+  'use strict';
+  var C = window.SlitCalc;
+  var KEY_RECORDS = 'slitLabLog.records.v4';   // v4 另存（每筆帶自己的老師編號與程式網址）
+  var KEY_BASIC = 'slitLabLog.basic.v1';
+  var SCRIPT_URL = (typeof TEACHER_SCRIPT_URL === 'string') ? TEACHER_SCRIPT_URL.trim() : '';
+  var TEACHER_ID = '';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var fmt = function (v, n) { return Number(v).toFixed(n); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); };
+
+  var COLOR_CAPTION = (window.SlitSettings && SlitSettings.COLOR_CAPTION) || {
+    red: '紅光（650 nm 或 635 nm）',
+    green: '綠光（532 nm 或 520 nm）'
+  };
+  function fillColorLabels() {
+    $$('[data-color-label]').forEach(function (el) {
+      var c = el.getAttribute('data-color-label');
+      el.textContent = COLOR_CAPTION[c] || c;
+    });
+  }
+
+  // 從網址 #c= 讀老師設定；失敗則友善提示並用預設
+  var activeSettings = null;
+  (function loadTeacherSettings() {
+    var S = window.SlitSettings;
+    if (!S) return;
+    var box = document.getElementById('settingsBanner');
+    // 短連結 ?t=部署編號&c=課堂代碼：向老師的 Apps Script 讀課堂設定，存在這台裝置供離線使用
+    var short = S.shortFromSearch && S.shortFromSearch(location.search);
+    if (short) {
+      loadShortSettings(S, short, box);
+      return;
+    }
+    var parsed = S.fromHash(location.hash);
+    if (!parsed.ok) {
+      if (box) {
+        box.hidden = false;
+        box.className = 'banner err';
+        box.textContent = '設定連結無效或已損壞，已改用預設設定。請向老師重新取得連結。';
+      }
+      return;
+    }
+    if (!parsed.settings) return;
+    activeSettings = parsed.settings;
+    if (activeSettings.classId && activeSettings.scriptUrl) activeSettings = withLatestClassConfig(S, activeSettings, box);
+    window.SLIT_ACTIVE_SETTINGS = activeSettings;
+    if (parsed.settings.warnings && parsed.settings.warnings.length && box) {
+      box.hidden = false;
+      box.textContent = parsed.settings.warnings.join(' ');
+    }
+  })();
+
+  // 班級連結（v3）：老師之後改了縫或班名，舊連結也會拿到新設定（存在這台裝置，離線照用）
+  function withLatestClassConfig(S, base, box) {
+    var cacheKey = 'slitLabLog.classCfg.v3:' + base.classId;
+    function merge(res) {
+      var raw = {};
+      Object.keys(base).forEach(function (k) { raw[k] = base[k]; });
+      var c = res.config || {};
+      ['teacherName', 'lasers', 'experiments', 'suggestedL', 'slits'].forEach(function (k) { if (c[k] !== undefined) raw[k] = c[k]; });
+      if (res.name) raw.classroomName = res.name;
+      return S.normalize(raw);
+    }
+    var sig = function (st) { return JSON.stringify([st.teacherName, st.lasers, st.experiments, st.suggestedL, st.slits, st.classroomName]); };
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(cacheKey)); } catch (e) {}
+    var current = cached && cached.config ? merge(cached) : base;
+    fetch(base.scriptUrl + '?action=config&tid=' + encodeURIComponent(base.teacherId || '') + '&id=' + encodeURIComponent(base.classId)).then(function (r) { return r.json(); }).then(function (res) {
+      if (!res || !res.ok || !res.config) return;
+      var fresh = merge(res);
+      var guard = 'slitLabLog.reloaded:' + base.classId;
+      if (sig(fresh) === sig(current)) { try { sessionStorage.removeItem(guard); } catch (e) {} return; }
+      var saved = false;
+      try { localStorage.setItem(cacheKey, JSON.stringify({ name: res.name || '', config: res.config })); saved = true; } catch (e) {}
+      if (saved && !sessionStorage.getItem(guard)) { sessionStorage.setItem(guard, '1'); location.reload(); }
+      else if (box) { box.hidden = false; box.className = 'banner'; box.textContent = '老師已更新這個班的設定，重新整理網頁後套用。'; }
+    }).catch(function () { /* 沒網路或老師程式是舊版：用連結裡的設定 */ });
+    return current;
+  }
+
+  function loadShortSettings(S, short, box) {
+    var cacheKey = 'slitLabLog.classCfg.v1:' + short.t + ':' + short.c;
+    var cachedRaw = null, cached = null;
+    try { cachedRaw = localStorage.getItem(cacheKey); cached = JSON.parse(cachedRaw); } catch (e) {}
+    function use(res) {
+      var cfg = S.normalize(res.config || {});
+      cfg.scriptUrl = short.scriptUrl;
+      cfg.classCode = short.c;
+      cfg.classroomName = String(res.name || cfg.classroomName || '').slice(0, 40);
+      activeSettings = cfg;
+      window.SLIT_ACTIVE_SETTINGS = cfg;
+    }
+    function banner(text, err) {
+      if (!box) return;
+      box.hidden = !text; box.className = 'banner' + (err ? ' err' : ''); box.textContent = text;
+    }
+    if (cached && cached.config) use(cached);
+    else {
+      // 還沒讀到設定也能記錄與送出（資料仍進老師的試算表、這個課堂的分頁）
+      use({ config: { slits: S.defaultSlits() }, name: '' });
+      banner('正在讀取老師的課堂設定…');
+    }
+    fetch(short.scriptUrl + '?action=config&code=' + encodeURIComponent(short.c)).then(function (res) {
+      return res.json();
+    }).then(function (res) {
+      if (!res || !res.ok || !res.config) throw new Error((res && res.error) || 'no config');
+      var fresh = JSON.stringify({ name: res.name || '', config: res.config });
+      if (fresh === cachedRaw) return;
+      var stored = false;
+      try { localStorage.setItem(cacheKey, fresh); stored = localStorage.getItem(cacheKey) === fresh; } catch (e) {}
+      if (!cached && stored) location.reload(); // 第一次開：讀到設定後重新載入套用
+      else if (!cached) banner('已讀到課堂設定，但這個瀏覽器不能儲存資料（可能是無痕模式），請改用一般模式開啟。', true);
+      else banner('老師已更新課堂設定，重新整理網頁後套用。');
+    }).catch(function () {
+      if (!cached) banner('讀不到老師的課堂設定（可能沒有網路，或老師尚未更新試算表程式）。先用預設狹縫，紀錄仍會存在這台裝置，也可以送出給老師。', true);
+    });
+  }
+
+  // ---- 本機儲存 ----
+  function loadRecords() { try { return JSON.parse(localStorage.getItem(KEY_RECORDS)) || []; } catch (e) { return []; } }
+  function saveRecords(list) { localStorage.setItem(KEY_RECORDS, JSON.stringify(list)); }
+
+  // ---- 基本資料 ----
+  var basicIds = ['className', 'seat', 'group', 'date'];   // v4 不收姓名
+  function getBasic() { var b = {}; basicIds.forEach(function (id) { b[id] = $('#' + id).value.trim(); }); return b; }
+  function initBasic() {
+    var saved = {}; try { saved = JSON.parse(localStorage.getItem(KEY_BASIC)) || {}; } catch (e) {}
+    basicIds.forEach(function (id) {
+      var el = $('#' + id);
+      if (saved[id]) el.value = saved[id];
+      el.addEventListener('input', function () { localStorage.setItem(KEY_BASIC, JSON.stringify(getBasic())); renderCompareAndHint(); });
+    });
+    if (!$('#date').value) {
+      var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      $('#date').value = d.toISOString().slice(0, 10);
+    }
+  }
+
+  // ---- 讀取分頁輸入 ----
+  function readPanel(panel) {
+    var o = {};
+    $$('input[data-f], select[data-f]', panel).forEach(function (el) {
+      var f = el.dataset.f;
+      if (el.type === 'radio') { if (el.checked) o[f] = el.value; return; }
+      o[f] = el.value;
+    });
+    return o;
+  }
+  function compute(type, inp) { return type === 'double' ? C.calcDouble(inp) : C.calcSingle(inp); }
+  function verify(type, inp) { return type === 'double' ? C.verifyDouble(inp) : C.verifySingle(inp); }
+
+  function markBad(panel) {
+    $$('input[data-f]', panel).forEach(function (el) {
+      if (el.dataset.f === 'photoNo' || el.type === 'radio') return;
+      if (el.dataset.f === 'n') {
+        el.classList.toggle('bad', el.value.trim() !== '' && !C.parseCountN(el.value).ok);
+        return;
+      }
+      el.classList.toggle('bad', el.value.trim() !== '' && !C.parsePositive(el.value, '').ok);
+    });
+  }
+
+  function updateNLabel(panel) {
+    var parsed = C.parseCountN(readPanel(panel).n);
+    var nText = parsed.ok ? String(parsed.value) : 'n';
+    $$('[data-n-label]', panel).forEach(function (el) { el.textContent = nText; });
+  }
+
+  function renderIdle(panel) {
+    var type = panel.dataset.type, inp = readPanel(panel), box = $('.result', panel);
+    markBad(panel);
+    var meas = compute(type, inp);
+    var hasStudent = String(inp.studentLambda || '').trim() !== '';
+    if (!meas.ok) {
+      // 尚未填齊時用簡短提示，不列出每一個「請填寫」，以免未開始就一大串紅字
+      var missingOnly = meas.errors.every(function (e) { return /請填寫$|請選擇$/.test(e); });
+      if (missingOnly && !hasAnyMeas(inp, type)) {
+        box.innerHTML = '<div>請選擇雷射顏色、填寫量測數據與你算出的波長，再按「核對」。</div>';
+      } else {
+        box.innerHTML = '<div>尚未核對，請檢查：</div><ul>' + meas.errors.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('') + '</ul>';
+      }
+      return;
+    }
+    if (!hasStudent) {
+      box.innerHTML = '<div>量測數據已齊，請填寫你算出的波長，再按「核對」。</div>';
+      return;
+    }
+    var s = C.parsePositive(inp.studentLambda, '你算出的波長');
+    if (!s.ok) {
+      box.innerHTML = '<div>尚未核對，請檢查：</div><ul><li>' + esc(s.error) + '</li></ul>';
+      return;
+    }
+    box.innerHTML = '<div>請按「核對」查看正確算法與結果。</div>';
+  }
+
+  function hasAnyMeas(inp, type) {
+    if (inp.color || String(inp.studentLambda || '').trim()) return true;
+    if (String(inp.L || '').trim()) return true;
+    if (type === 'double') return String(inp.d || '').trim() !== '' || String(inp.total || '').trim() !== '';
+    return String(inp.a || '').trim() !== '' || String(inp.W || '').trim() !== '';
+  }
+  function renderVerified(panel, r) {
+    var box = $('.result', panel);
+    if (!r.ok) {
+      box.innerHTML = '<div>尚未核對，請檢查：</div><ul>' + r.errors.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('') + '</ul>';
+      return r;
+    }
+    var h = '<div class="steps-title">正確算法（代入你的量測值）</div>';
+    h += '<ul class="steps">' + r.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>';
+    h += '<div>你算出的波長：' + fmt(r.studentLambda, 1) + ' nm</div>';
+    h += '<div class="big">正確結果：' + fmt(r.lambdaNm, 1) + ' nm</div>';
+    if (r.match) h += '<div class="ok">✓ 相符（允許 ±' + r.matchTolPct + '% 的四捨五入誤差）</div>';
+    else h += '<div class="ng">✗ 不相符（允許 ±' + r.matchTolPct + '% 的四捨五入誤差）</div>';
+    if (r.warning) h += '<div class="warn">⚠️ ' + esc(r.warning) + '</div>';
+    h += otherColorHint(panel, r);
+    box.innerHTML = h;
+    return r;
+  }
+
+  function otherColorHint(panel, r) {
+    var basic = getBasic();
+    var list = loadRecords().filter(function (rec) {
+      return rec.type === panel.dataset.type && rec.color && rec.className === basic.className &&
+        ((basic.group && rec.group === basic.group) || (basic.seat && rec.seat === basic.seat));
+    });
+    var hasOther = list.some(function (rec) { return rec.color !== r.color; });
+    if (hasOther) return '';
+    var other = r.color === 'red' ? '綠光' : '紅光';
+    return '<p class="hint">同一組再記一筆' + other + '的紀錄，就可以比較紅光和綠光的波長。</p>';
+  }
+
+  function onFormChange(panel) {
+    panel.dataset.checked = '';
+    updateNLabel(panel);
+    renderIdle(panel);
+  }
+
+  function checkPanel(panel) {
+    var inp = readPanel(panel);
+    markBad(panel);
+    var r = verify(panel.dataset.type, inp);
+    if (r.ok) panel.dataset.checked = '1';
+    else panel.dataset.checked = '';
+    renderVerified(panel, r);
+    return r;
+  }
+
+  // ---- 儲存一筆 ----
+  function setSaveMsg(panel, kind, text) {
+    var el = $('[data-save-msg]', panel);
+    if (!el) return;
+    el.hidden = !text;
+    el.className = 'save-msg' + (kind ? ' ' + kind : '');
+    el.textContent = text || '';
+  }
+  function basicFillHint(errors) {
+    var labels = [], seen = {};
+    function add(lab) { if (!seen[lab]) { seen[lab] = true; labels.push(lab); } }
+    (errors || []).forEach(function (e) {
+      if (e.indexOf('班級') === 0) add('班級');
+      else if (e.indexOf('座號與組別') === 0) add('座號或組別');
+      else if (e.indexOf('座號') === 0) add('座號');
+      else if (e.indexOf('日期') === 0) add('日期');
+      else if (e.indexOf('照片編號') === 0) add('照片編號');
+    });
+    return labels.length ? ('請先在最上方填好：' + labels.join('、')) : '請先在最上方填好基本資料。';
+  }
+  function firstBasicField(errors) {
+    var order = [
+      { id: 'className', hit: function (e) { return e.indexOf('班級') === 0; } },
+      { id: 'seat', hit: function (e) { return e.indexOf('座號') === 0; } },
+      { id: 'group', hit: function (e) { return e.indexOf('組別') === 0; } },
+      { id: 'date', hit: function (e) { return e.indexOf('日期') === 0; } }
+    ];
+    var i, j;
+    for (i = 0; i < order.length; i++) {
+      for (j = 0; j < errors.length; j++) {
+        if (order[i].hit(errors[j])) return document.getElementById(order[i].id);
+      }
+    }
+    var photoErr = (errors || []).some(function (e) { return e.indexOf('照片編號') === 0; });
+    if (photoErr) return document.querySelector('.panel:not([hidden]) input[data-f="photoNo"]');
+    return null;
+  }
+  function saveRecord(panel) {
+    var basic = getBasic(), inp = readPanel(panel);
+    basic.photoNo = inp.photoNo || '';
+    var vb = C.validateBasic(basic);
+    var ul = $('#basicErrors');
+    ul.innerHTML = vb.errors.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('');
+    var r = checkPanel(panel);
+    if (!vb.ok) {
+      setSaveMsg(panel, 'ng', basicFillHint(vb.errors));
+      var field = firstBasicField(vb.errors);
+      if (field) {
+        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (typeof field.focus === 'function') field.focus();
+      }
+      return;
+    }
+    if (!r.ok) {
+      setSaveMsg(panel, 'ng', '量測資料或你算出的波長有誤，請先修正再儲存。');
+      return;
+    }
+    var type = panel.dataset.type;
+    var rec = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 10),   // 唯一編號：重送時後端靠它去重
+      type: type, savedAt: new Date().toISOString(), status: 'local',
+      className: basic.className, seat: basic.seat, group: basic.group, date: basic.date,
+      photoNo: (inp.photoNo || '').trim(),
+      color: r.color, colorLabel: r.colorLabel, lambda0: r.lambda0,
+      L: r.L, studentLambda: r.studentLambda, lambdaNm: r.lambdaNm,
+      match: r.match, errorPct: r.errorPct, warning: r.warning
+    };
+    var slitPick = (inp.slitPick || '').trim();
+    rec.slitId = (slitPick && slitPick !== '__other__') ? slitPick : '';
+    if (activeSettings && activeSettings.classId) { rec.classId = activeSettings.classId; rec.classroomName = activeSettings.classroomName || ''; }
+    if (SCRIPT_URL && TEACHER_ID) { rec.url = SCRIPT_URL; rec.tid = TEACHER_ID; }   // 送到哪位老師（之後補送也送對地方）
+    if (type === 'double') { rec.d = r.d; rec.n = r.n; rec.total = r.total; rec.dy = r.dy; }
+    else { rec.a = r.a; rec.W = r.W; }
+    var list = loadRecords(); list.unshift(rec); saveRecords(list);
+    renderList();
+    // 儲存後再畫一次結果，讓「再記一筆另一色」或比較提示更新
+    renderVerified(panel, r);
+    setSaveMsg(panel, 'ok', '已儲存，請看下方紀錄');
+    $('#sendStatus').textContent = '已儲存在這台裝置。';
+  }
+
+  // ---- 紀錄列表與紅綠比較 ----
+  var TYPE_NAME = { double: '雙狹縫', single: '單狹縫' };
+  var ST_NAME = { local: '未送出', queued: '等待送出／重試中', sent: '✅ 老師已收到', failed: '尚未送出（可再按送出）', rejected: '送不進去（請問老師）' };
+  function longerText(cmp) {
+    if (cmp.longer === 'equal') return '兩個波長一樣長';
+    return (cmp.longer === 'red' ? '紅光' : '綠光') + '波長比較長';
+  }
+  function renderCompareAndHint() {
+    var box = $('#compareBox');
+    var pairs = C.findColorPairs(loadRecords());
+    if (!pairs.length) { box.innerHTML = ''; return; }
+    box.innerHTML = pairs.map(function (p) {
+      var who = '班級 ' + esc(p.className) + (p.seat ? '　座號 ' + esc(p.seat) : '') + (p.group ? '　組別 ' + esc(p.group) : '');
+      var c = p.compare;
+      return '<div class="compare">' +
+        '<h3>這一組的' + TYPE_NAME[p.type] + '比較</h3>' +
+        '<div class="meta">' + who + '</div>' +
+        '<div>紅光 λ = ' + fmt(c.redLambda, 1) + ' nm</div>' +
+        '<div>綠光 λ = ' + fmt(c.greenLambda, 1) + ' nm</div>' +
+        '<div class="big">' + longerText(c) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+  function renderList() {
+    var list = loadRecords(), box = $('#recordList');
+    renderCompareAndHint();
+    if (!list.length) { box.innerHTML = '<p class="hint">還沒有紀錄。</p>'; return; }
+    box.innerHTML = list.map(function (r) {
+      var who = '班級 ' + esc(r.className) + (r.seat ? '　座號 ' + esc(r.seat) : '') + (r.group ? '　組別 ' + esc(r.group) : '');
+      var matched = r.match ? '<span class="st sent">相符</span>' : '<span class="st failed">不相符</span>';
+      return '<div class="rec" data-id="' + esc(r.id) + '">' +
+        '<div><b>' + TYPE_NAME[r.type] + '　' + esc(r.colorLabel || r.color) + '</b>　你的答案 ' + fmt(r.studentLambda, 1) + ' nm　正確 ' + fmt(r.lambdaNm, 1) + ' nm　' + matched +
+        (r.warning ? '　<span style="color:#b35c00">⚠️</span>' : '') + '</div>' +
+        '<div class="meta">' + who + (r.slitId ? '　狹縫片 ' + esc(r.slitId) : '') + '　' + esc(r.date) + (r.photoNo ? '　照片 ' + esc(r.photoNo) : '') + '</div>' +
+        '<div><span class="st ' + r.status + '">' + ST_NAME[r.status] + '</span></div>' +
+        '<div style="margin-top:4px">' + (r.status !== 'sent' && (r.url || SCRIPT_URL) ? '<button data-act="send">送出這筆</button>' : '') +
+        '<button data-act="del">刪除</button></div></div>';
+    }).join('');
+  }
+
+  // ---- 送出給老師（v4：GET 讀得到回應，確定老師收到才算成功；失敗自動重送）----
+  // 每筆帶唯一 id，後端去重，所以重送不會變兩筆。
+  var RETRY_MAX = 5;                 // 一次送出最多試 5 次
+  var BASE_DELAY = 1000;             // 第 2 次約 1 秒後、第 3 次約 2 秒、4 秒、8 秒（每次再乘 0.5～1.5 的隨機抖動）
+  var FIRST_JITTER = 800;            // 第一次也先等 0～0.8 秒，全班同一秒按送出時錯開
+  var TIMEOUT_MS = 20000;
+  var sending = false;
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function backoff(i) { return Math.round(Math.min(16000, BASE_DELAY * Math.pow(2, i)) * (0.5 + Math.random())); }
+  function payloadOf(rec) {
+    var o = {};
+    Object.keys(rec).forEach(function (k) { if (['status', 'sentAt', 'url', 'name', 'tries', 'lastError'].indexOf(k) < 0) o[k] = rec[k]; });
+    return o;
+  }
+  // 送一次：回 { ok } / { retry:true } / { retry:false, error }
+  function sendOnce(rec) {
+    var url = rec.url || SCRIPT_URL, tid = rec.tid || TEACHER_ID;
+    if (!tid) {   // 舊版長連結（沒有老師編號，送到老師自己的 v1–v3 程式）：照舊用 no-cors 表單 POST，讀不到回應
+      var body = new URLSearchParams(); body.append('payload', JSON.stringify(payloadOf(rec)));
+      return fetch(url, { method: 'POST', mode: 'no-cors', body: body }).then(function () { return { ok: true, legacy: true }; },
+        function () { return { ok: false, retry: true, error: '網路中斷或逾時' }; });
+    }
+    var q = '?action=submit&tid=' + encodeURIComponent(tid) + '&p=' + encodeURIComponent(JSON.stringify(payloadOf(rec)));
+    var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS) : null;
+    return fetch(url + q, { redirect: 'follow', cache: 'no-store', signal: ctrl ? ctrl.signal : undefined }).then(function (res) {
+      return res.text().then(function (text) {
+        var j = null; try { j = JSON.parse(text); } catch (e) {}
+        if (j && j.ok) return { ok: true, duplicate: !!j.duplicate };
+        if (j && j.retry === false) return { ok: false, retry: false, error: j.error || '伺服器拒收' };
+        return { ok: false, retry: true, error: (j && j.error) || ('伺服器忙碌（' + res.status + '）') };   // 忙碌頁、超過同時上限等
+      });
+    }, function () { return { ok: false, retry: true, error: '網路中斷或逾時' }; }).then(function (r) { if (timer) clearTimeout(timer); return r; });
+  }
+  function sendWithRetry(rec, onRetry) {
+    var i = 0;
+    function attempt() {
+      return sendOnce(rec).then(function (r) {
+        rec.tries = (rec.tries || 0) + 1;
+        if (r.ok || r.retry === false || ++i >= RETRY_MAX) return r;
+        var d = backoff(i - 1);
+        onRetry(i + 1, d, r.error);
+        return wait(d).then(attempt);
+      });
+    }
+    return wait(Math.random() * FIRST_JITTER).then(attempt);
+  }
+  function setSendStatus(kind, html) {
+    var el = $('#sendStatus');
+    el.className = 'send-status' + (kind ? ' ' + kind : '');
+    el.innerHTML = html;
+  }
+  function updateRec(id, patch) {
+    var list = loadRecords();
+    list.forEach(function (r) { if (r.id === id) Object.keys(patch).forEach(function (k) { r[k] = patch[k]; }); });
+    saveRecords(list);
+  }
+  // ids：指定幾筆；null＝所有還沒送到的；auto＝開頁或恢復網路時自動補送
+  function sendRecords(ids, auto) {
+    if (sending) return;
+    var todo = loadRecords().filter(function (r) {
+      if (!(r.url || SCRIPT_URL)) return false;
+      if (ids) return ids.indexOf(r.id) >= 0 && r.status !== 'sent';
+      return auto ? (r.status === 'queued' || r.status === 'failed') : (r.status !== 'sent' && r.status !== 'rejected');
+    });
+    if (!todo.length) { if (!auto) setSendStatus('', '沒有需要送出的紀錄。'); return; }
+    if (navigator.onLine === false) {
+      todo.forEach(function (r) { updateRec(r.id, { status: 'queued' }); });
+      renderList();
+      setSendStatus('send-fail', '⚠️ <b>尚未送出</b>：目前沒有網路。紀錄還在這台裝置，連上網路後會自動補送。');
+      return;
+    }
+    sending = true; sendBtn.disabled = true;
+    todo.forEach(function (r) { updateRec(r.id, { status: 'queued' }); });
+    renderList();
+    var ok = 0, fail = 0, rejected = 0, n = 0, lastErr = '';
+    setSendStatus('send-wait', '⏳ ' + (auto ? '自動補送上次沒送到的紀錄…' : '送出中…') + '（共 ' + todo.length + ' 筆）');
+    var chain = Promise.resolve();
+    todo.forEach(function (rec) {
+      chain = chain.then(function () {
+        n++;
+        return sendWithRetry(rec, function (k, d, err) {
+          setSendStatus('send-wait', '⏳ <b>尚未送出，正在重試</b>（第 ' + n + ' 筆，第 ' + k + ' 次，約 ' + Math.max(1, Math.round(d / 1000)) + ' 秒後）…<br><span class="hint">原因：' + esc(err) + '。紀錄已存在這台裝置，不會不見。</span>');
+        }).then(function (r) {
+          if (r.ok) { ok++; updateRec(rec.id, { status: 'sent', sentAt: new Date().toISOString(), lastError: '', tries: rec.tries }); }
+          else if (r.retry === false) { rejected++; lastErr = r.error; updateRec(rec.id, { status: 'rejected', lastError: r.error, tries: rec.tries }); }
+          else { fail++; lastErr = r.error; updateRec(rec.id, { status: 'failed', lastError: r.error, tries: rec.tries }); }
+          renderList();
+        });
+      });
+    });
+    return chain.then(function () {
+      sending = false; sendBtn.disabled = !SCRIPT_URL;
+      if (!fail && !rejected) setSendStatus('send-ok', '✅ <b>送出成功</b>：老師已收到 ' + ok + ' 筆。');
+      else if (fail) {
+        setSendStatus('send-fail', '⚠️ <b>尚未送出 ' + fail + ' 筆</b>' + (ok ? '（成功 ' + ok + ' 筆）' : '') + '：' + esc(lastErr) + '。<br>紀錄還在這台裝置，請過一下再按一次「送出給老師」；網頁開著時約 1 分鐘後也會自動再試，下次打開網頁也會自動補送。');
+        if (!auto) setTimeout(function () { sendRecords(null, true); }, 30000 + Math.random() * 30000);   // 錯開的再一輪
+      }
+      else setSendStatus('send-fail', '⚠️ 有 ' + rejected + ' 筆送不進去' + (ok ? '（成功 ' + ok + ' 筆）' : '') + '：' + esc(lastErr) + '。請把畫面給老師看，或下載 CSV 交給老師。');
+    });
+  }
+  window.__slitSend = { sendRecords: sendRecords, cfg: function (o) { if (o.base != null) BASE_DELAY = o.base; if (o.jitter != null) FIRST_JITTER = o.jitter; if (o.max != null) RETRY_MAX = o.max; } };  // 測試用
+
+  // ---- CSV ----
+  function downloadCSV() {
+    var list = loadRecords();
+    if (!list.length) { alert('還沒有紀錄可以下載。'); return; }
+    var headers = ['實驗', '班級', '座號', '組別', '日期', '照片編號', '狹縫片編號', '雷射顏色', '標示波長λ0(nm)', '狹縫間距d(mm)', '縫寬a(mm)',
+      'L(mm)', '量了幾個間距n', '第0條到第n條亮紋總長(mm)', 'Δy(mm)', 'W(mm)', '學生算出的波長(nm)', '正確波長λ(nm)', '答案相符', '誤差(%)', '警告', '儲存時間', '送出狀態'];
+    var rows = list.map(function (r) {
+      var D = r.type === 'double';
+      return [TYPE_NAME[r.type], r.className, r.seat, r.group, r.date, r.photoNo, r.slitId || '', r.colorLabel || r.color, r.lambda0,
+        D ? r.d : '', D ? '' : r.a, r.L, D ? r.n : '', D ? r.total : '', D ? fmt(r.dy, 4) : '', D ? '' : r.W,
+        fmt(r.studentLambda, 1), fmt(r.lambdaNm, 1), r.match ? '相符' : '不相符', fmt(r.errorPct, 2), r.warning || '',
+        new Date(r.savedAt).toLocaleString('zh-TW', { hour12: false }), ST_NAME[r.status]];
+    });
+    var blob = new Blob([C.toCSV(headers, rows)], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '狹縫實驗紀錄_' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  // ---- 分頁 ----
+  function hasConfigHash() {
+    return typeof location.hash === 'string' && /(^#|&)c=/.test(location.hash);
+  }
+  function showTab(name) {
+    $$('.tabs button').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === name)); });
+    $$('.panel').forEach(function (p) { p.hidden = p.dataset.type !== name; });
+  }
+
+  function setupSlitPicker(panel, slits) {
+    var S = window.SlitSettings;
+    var wrap = $('.slit-pick', panel);
+    var sel = $('select[data-f="slitPick"]', panel);
+    var type = panel.dataset.type;
+    var field = type === 'double' ? 'd' : 'a';
+    var inp = $('input[data-f="' + field + '"]', panel);
+    if (!wrap || !sel) return;
+    if (!slits || !slits.length) { wrap.hidden = true; if (inp) inp.readOnly = false; return; }
+    wrap.hidden = false;
+    sel.innerHTML = '<option value="">請選擇</option>' +
+      slits.map(function (s) {
+        return '<option value="' + esc(s.id) + '">' + esc(S.slitOptionLabel(s)) + '</option>';
+      }).join('') +
+      '<option value="__other__">其他／自己填</option>';
+    function applyPick() {
+      var v = sel.value, hit = null;
+      slits.forEach(function (s) { if (s.id === v) hit = s; });
+      if (hit) { inp.value = (S.formatSlitValue ? S.formatSlitValue(hit.value) : String(hit.value)); inp.readOnly = true; }
+      else { inp.readOnly = false; if (v !== '__other__') /* 尚未選 */ ; }
+      onFormChange(panel);
+    }
+    sel.addEventListener('change', applyPick);
+  }
+
+  function applyTeacherSettings(cfg) {
+    if (!cfg) return;  // 學生頁不放老師設定入口（老師用 teacher.html 網址直接進）
+    if (cfg.scriptUrl) SCRIPT_URL = cfg.scriptUrl;
+    if (cfg.teacherId) TEACHER_ID = cfg.teacherId;
+    if (cfg.teacherName) {
+      var el = $('#courseName');
+      if (el) { el.hidden = false; el.textContent = cfg.teacherName; }
+    }
+    var colors = (window.SlitSettings && SlitSettings.allowedColors(cfg)) || ['red', 'green'];
+    $$('.choices label').forEach(function (lab) {
+      var inp = lab.querySelector('input[data-f="color"]');
+      if (!inp) return;
+      var on = colors.indexOf(inp.value) >= 0;
+      lab.hidden = !on;
+      if (!on) inp.checked = false;
+    });
+    if (colors.length === 1) {
+      $$('input[data-f="color"][value="' + colors[0] + '"]').forEach(function (el) { el.checked = true; });
+    }
+    var exps = cfg.experiments || ['double', 'single'];
+    $$('.tabs button').forEach(function (b) {
+      b.hidden = exps.indexOf(b.dataset.tab) < 0;
+    });
+    if (cfg.suggestedL) {
+      $$('input[data-f="L"]').forEach(function (el) { if (!el.value) el.value = String(cfg.suggestedL); });
+    }
+    var tip = $('.tip');
+    if (tip) {
+      var parts = ['💡 建議 L 約 ' + (cfg.suggestedL ? (cfg.suggestedL / 10 >= 100 ? (cfg.suggestedL / 1000) + ' m' : cfg.suggestedL + ' mm') : '1 m') + '，讓條紋夠寬好量。'];
+      if (colors.length === 2) parts.push('每組請紅光、綠光都做，方便比較波長。');
+      tip.textContent = parts.join(' ');
+    }
+    $$('.panel').forEach(function (p) {
+      var list = window.SlitSettings ? SlitSettings.slitsFor(cfg, p.dataset.type) : [];
+      setupSlitPicker(p, list);
+    });
+  }
+
+  // ---- 初始化 ----
+  fillColorLabels();
+  applyTeacherSettings(activeSettings);
+  if (!activeSettings && window.SlitSettings) {
+    // 沒有老師設定：用預設的 6 條縫
+    $$('.panel').forEach(function (p) {
+      var all = SlitSettings.defaultSlits();
+      setupSlitPicker(p, SlitSettings.slitsFor({ slits: all }, p.dataset.type));
+    });
+  }
+  initBasic();
+  $$('.tabs button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      showTab(b.dataset.tab);
+      if (!hasConfigHash()) history.replaceState(null, '', '#' + b.dataset.tab);
+    });
+  });
+  var startTab = 'double';
+  if (activeSettings && activeSettings.experiments && activeSettings.experiments.indexOf('double') < 0) startTab = 'single';
+  else if (!activeSettings && location.hash === '#single') startTab = 'single';
+  showTab(startTab);
+  $$('.panel').forEach(function (p) {
+    $$('input, select', p).forEach(function (el) {
+      el.addEventListener('input', function () { onFormChange(p); });
+      el.addEventListener('change', function () { onFormChange(p); });
+    });
+    $('.check', p).addEventListener('click', function () { checkPanel(p); });
+    $('.save', p).addEventListener('click', function () { saveRecord(p); });
+    $('.clear', p).addEventListener('click', function () {
+      ['d', 'a', 'L', 'total', 'W', 'studentLambda', 'photoNo'].forEach(function (f) {
+        $$('input[data-f="' + f + '"]', p).forEach(function (el) { el.value = ''; el.readOnly = false; el.classList.remove('bad'); });
+      });
+      $$('input[data-f="n"]', p).forEach(function (el) { el.value = '10'; el.classList.remove('bad'); });
+      $$('select[data-f="slitPick"]', p).forEach(function (el) { el.value = ''; });
+      if (activeSettings && activeSettings.suggestedL) {
+        $$('input[data-f="L"]', p).forEach(function (el) { el.value = String(activeSettings.suggestedL); });
+      }
+      p.dataset.checked = '';
+      setSaveMsg(p, '', '');
+      updateNLabel(p);
+      renderIdle(p);
+    });
+    updateNLabel(p);
+    renderIdle(p);
+  });
+  var sendBtn = $('#sendAll');
+  if (!SCRIPT_URL) { sendBtn.disabled = true; sendBtn.textContent = '尚未設定老師的試算表'; }
+  sendBtn.addEventListener('click', function () { sendRecords(null); });
+  // 上次沒送到的（等待中／失敗），開頁後和恢復網路時自動補送
+  setTimeout(function () { sendRecords(null, true); }, 600 + Math.random() * 2400);
+  window.addEventListener('online', function () { sendRecords(null, true); });
+  $('#downloadCsv').addEventListener('click', downloadCSV);
+  $('#recordList').addEventListener('click', function (e) {
+    var btn = e.target.closest('button'); if (!btn) return;
+    var id = btn.closest('.rec').dataset.id;
+    if (btn.dataset.act === 'del') {
+      if (!confirm('確定刪除這筆紀錄？刪除後無法復原。')) return;
+      saveRecords(loadRecords().filter(function (r) { return r.id !== id; })); renderList();
+    } else if (btn.dataset.act === 'send') sendRecords([id]);
+  });
+  renderList();
+})();

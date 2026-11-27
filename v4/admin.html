@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>開通老師（管理者）　狹縫干涉繞射實驗紀錄</title>
+<link rel="stylesheet" href="css/style.css?v=v4a">
+</head>
+<body>
+<header>
+  <h1>開通老師</h1>
+  <p class="sub">管理者專用：輸入老師的 email，按一下就建好他專屬的試算表和教師頁連結</p>
+</header>
+<main>
+  <!-- 第一次連線（部署後做一次） -->
+  <section class="card setup" id="connectCard" hidden>
+    <h2>第一次連線（只要做一次）</h2>
+    <p class="hint">還沒部署總程式？照著<a href="apps_script/部署步驟.md" target="_blank" rel="noopener">部署步驟</a>做：
+      <a class="btn" href="https://script.google.com/create" target="_blank" rel="noopener">① 開新的 Apps Script 專案</a>
+      <button type="button" id="copyCode">② 複製總程式</button> <span id="copyCodeStatus"></span></p>
+    <p>把總程式部署完成時拿到的網址（結尾是 <code>/exec</code>）貼到下面，會自動連線，這個瀏覽器就登記成管理者。</p>
+    <label>總程式網址（/exec）
+      <input id="execUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+    </label>
+    <div id="pasteKeyBox" hidden>
+      <label>管理者金鑰（Apps Script「專案設定 → 指令碼屬性」裡 ADMIN_KEY 的值）
+        <input id="adminKeyIn" type="text" autocomplete="off" spellcheck="false">
+      </label>
+      <button type="button" id="useKey" class="primary">用這把金鑰連線</button>
+    </div>
+    <div class="test-result" id="connResult" hidden></div>
+  </section>
+
+  <div class="conn-bar" id="adminBar" hidden></div>
+
+  <!-- 開通 -->
+  <section class="card" id="createCard" hidden>
+    <h2>開通一位老師</h2>
+    <label>老師的 Google 帳號 email
+      <input id="tEmail" type="email" placeholder="例：teacher@school.edu.tw" autocomplete="off">
+    </label>
+    <label>老師名稱（選填，會顯示在試算表檔名和學生頁頂端）
+      <input id="tName" type="text" maxlength="40" placeholder="例：王老師">
+    </label>
+    <div class="actions"><button type="button" id="createBtn" class="primary">開通</button></div>
+    <div class="test-result" id="createResult" hidden></div>
+  </section>
+
+  <!-- 已開通老師 -->
+  <section class="card" id="listCard" hidden>
+    <h2>已開通的老師 <span class="hint" id="listCount"></span></h2>
+    <p class="hint" id="listLinks"></p>
+    <div class="table-wrap"><table class="admin-table" id="tTable">
+      <thead><tr><th>老師</th><th>開通時間</th><th>狀態</th><th>動作</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <input type="text" class="link-out" id="rowLinkOut" readonly hidden aria-label="老師的教師頁連結">
+    <p class="hint" id="listStatus"></p>
+  </section>
+
+  <section class="card" id="adminMore" hidden>
+    <h2>換電腦：「管理者連結」</h2>
+    <p class="hint">在別台電腦打開這個連結就能繼續開通老師。連結含管理者金鑰，請只存在自己的書籤，不要給任何人。</p>
+    <div class="actions"><button type="button" id="copyAdminLink">複製「管理者連結」</button></div>
+    <p class="hint" id="adminLinkStatus"></p>
+  </section>
+</main>
+<script src="js/settings.js?v=v4a"></script>
+<script src="js/admin.js?v=v4a"></script>
+</body>
+</html>
