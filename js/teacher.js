@@ -138,7 +138,7 @@
     var sent = JSON.stringify(SC.savePayload(store, cls).config);
     fetch(url, { method: 'POST', mode: 'no-cors', body: body }).then(function () {
       // no-cors 看不到結果，再讀回來確認真的存進去了
-      return fetch(url + '?action=config&c=' + cls.code).then(function (r) { return r.json(); });
+      return fetch(url + '?action=config&code=' + cls.code).then(function (r) { return r.json(); });
     }).then(function (res) {
       cls.synced = !!(res && res.ok && res.config && JSON.stringify(res.config) === sent);
     }, function () { cls.synced = false; }).then(function () {
@@ -368,7 +368,7 @@
 
   $('#copyGs').addEventListener('click', function () {
     var status = $('#copyGsStatus');
-    fetch('apps_script/Code.gs?v=20261127c').then(function (res) {
+    fetch('apps_script/Code.gs?v=20261127d').then(function (res) {
       if (!res.ok) throw new Error('找不到檔案');
       return res.text();
     }).then(function (text) {

@@ -73,7 +73,7 @@
       use({ config: { slits: S.defaultSlits() }, name: '' });
       banner('正在讀取老師的課堂設定…');
     }
-    fetch(short.scriptUrl + '?action=config&c=' + encodeURIComponent(short.c)).then(function (res) {
+    fetch(short.scriptUrl + '?action=config&code=' + encodeURIComponent(short.c)).then(function (res) {
       return res.json();
     }).then(function (res) {
       if (!res || !res.ok || !res.config) throw new Error((res && res.error) || 'no config');

@@ -4,7 +4,7 @@
  * v2：
  *  - 沒有課堂代碼的紀錄（舊連結）照舊寫入「雙狹縫」「單狹縫」。
  *  - 有課堂代碼的紀錄寫入各課堂的分頁，例如「301 基礎版-雙狹縫」。
- *  - 教師頁儲存課堂時送 action=saveClass，設定存在「課堂設定」分頁；學生短連結用 GET ?action=config&c=代碼 讀回。
+ *  - 教師頁儲存課堂時送 action=saveClass，設定存在「課堂設定」分頁；學生短連結用 GET ?action=config&code=代碼 讀回。
  *  - 第一次 saveClass 會記下老師金鑰（專案設定 → 指令碼屬性 TEACHER_KEY），之後金鑰不同就拒絕修改。
  */
 var SHEET_DOUBLE = '雙狹縫';
@@ -61,7 +61,7 @@ function doPost(e) {
 function doGet(e) {
   var p = (e && e.parameter) || {};
   if (p.action === 'config') {
-    var code = String(p.c || '');
+    var code = String(p.code || p.c || '');  // 用 code：Google 會擋網址參數 c（回 400）
     var found = CODE_RE.test(code) ? findClass_(code) : null;
     if (!found) return out_({ ok: false, error: '找不到這個課堂代碼' });
     var config = null;
