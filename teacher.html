@@ -3,46 +3,79 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>老師設定　狹縫干涉繞射實驗紀錄</title>
-<link rel="stylesheet" href="css/style.css">
+<title>課堂清單　狹縫干涉繞射實驗紀錄</title>
+<link rel="stylesheet" href="css/style.css?v=20261127c">
 </head>
 <body>
 <header>
-  <h1>老師設定</h1>
-  <p class="sub">產生專屬的學生實驗紀錄連結，資料進您自己的 Google 試算表</p>
+  <h1>課堂清單</h1>
+  <p class="sub">每個班級或版本一張卡片，各自有縫的設定、學生連結與上課簡報</p>
 </header>
 <main>
-  <section class="card">
-    <h2>五分鐘設定試算表（可選）</h2>
-    <p class="hint">不設也可以：學生的紀錄會存在自己的手機，可以下載 CSV 交給您。想讓資料自動進您的 Google 試算表，請照下面做一次就好。</p>
-    <ol class="steps-ol">
-      <li><b>開新試算表：</b>打開 <a href="https://sheets.google.com" target="_blank" rel="noopener">sheets.google.com</a>，按「空白」建立試算表，左上角檔名可改成「狹縫實驗紀錄」。</li>
-      <li><b>打開程式編輯器：</b>在試算表上方選單按「擴充功能」，再按「Apps Script」，會開出一個新分頁。</li>
-      <li><b>貼上接收程式：</b>先按這裡的
-        <button type="button" id="copyGs">複製接收程式</button>，
-        回到 Apps Script 分頁，把編輯區裡原本的幾行全部選取刪掉，貼上剛剛複製的程式，按上方的磁碟片圖示儲存。</li>
-      <li><b>發布成網址：</b>按右上角藍色的「部署」，選「新增部署作業」。
-        <ul>
-          <li>按「選取類型」旁的齒輪，選「網頁應用程式」。</li>
-          <li>「執行身分」選「我」，「誰可以存取」選「所有人」，再按「部署」。</li>
-          <li>第一次會要求授權：按「授予存取權」，選您的 Google 帳號。若出現「Google 尚未驗證這個應用程式」，按左下「進階」，再按「前往…（不安全）」，最後按「允許」。這是您自己寫給自己用的程式，所以 Google 會這樣提醒。</li>
-        </ul>
-      </li>
-      <li><b>把網址貼回來：</b>部署完成的視窗裡有一行「網頁應用程式」網址，長得像 <code>https://script.google.com/macros/s/一長串英數字/exec</code>。按旁邊的「複製」，再貼到本頁下方「Google Apps Script 網址」那一格。</li>
+  <!-- 第一次使用的三步驟引導 -->
+  <section class="card wizard" id="wizard" hidden>
+    <ol class="wiz-steps" id="wizSteps">
+      <li data-step="1">① 取名</li><li data-step="2">② 選縫</li><li data-step="3">③ 印紙</li>
     </ol>
-    <p class="hint" id="copyGsStatus"></p>
-    <p class="warn-note">學生的姓名只會進您自己的試算表。產生的學生連結裡含有 /exec 網址，任何拿到連結的人都能送資料進來，請不要把學生連結公開張貼到網路上。</p>
+    <div class="wiz-page" data-step="1">
+      <h2>幫第一個課堂取名</h2>
+      <p class="hint">一個班級或一種版本一個課堂，例如「301 基礎版」「302 進階版」。之後可以再新增。</p>
+      <label>課堂名稱
+        <input id="wizName" type="text" maxlength="40" placeholder="例：301 基礎版">
+      </label>
+      <label>您的名稱（顯示在學生頁頂端，可留空）
+        <input id="wizTeacher" type="text" maxlength="80" placeholder="例：王老師">
+      </label>
+    </div>
+    <div class="wiz-page" data-step="2" hidden>
+      <h2>這堂課用哪些縫</h2>
+      <p class="hint">勾選的縫會出現在學生頁的下拉選單。「建議使用」適合第一次做，「進階」給做完的組別。雷射波長、L 與自訂的縫，完成後按卡片上的「編輯」修改。</p>
+      <div id="wizSlits"></div>
+    </div>
+    <div class="wiz-page" data-step="3" hidden>
+      <h2>上課前列印（A4）</h2>
+      <div class="print-links"></div>
+      <p class="hint">要讓學生資料自動進您的 Google 試算表，請照下方「試算表與老師設定」做一次（約五分鐘）；不設也能上課，學生可下載 CSV 交給您。</p>
+    </div>
+    <ul class="errors" id="wizErrors"></ul>
+    <div class="actions wiz-actions">
+      <button type="button" id="wizSkip">略過</button>
+      <span class="spacer"></span>
+      <button type="button" id="wizBack">上一步</button>
+      <button type="button" id="wizNext" class="primary">下一步</button>
+    </div>
   </section>
 
-  <section class="card">
-    <h2>您的設定</h2>
-    <label>老師或課程名稱（顯示在學生頁頂端，可留空）
-      <input id="teacherName" type="text" placeholder="例：王老師 物理實驗" maxlength="80">
+  <!-- 課堂卡片 -->
+  <section id="listArea">
+    <div class="list-head">
+      <h2>我的課堂</h2>
+      <button type="button" id="addClass" class="primary">＋新增課堂</button>
+    </div>
+    <div class="card add-box" id="addBox" hidden>
+      <h3>新增課堂</h3>
+      <label>課堂名稱
+        <input id="addName" type="text" maxlength="40" placeholder="例：302 進階版">
+      </label>
+      <label>從哪裡開始
+        <select id="addFrom"></select>
+      </label>
+      <ul class="errors" id="addErrors"></ul>
+      <div class="actions">
+        <button type="button" id="addOk" class="primary">建立並編輯縫的設定</button>
+        <button type="button" id="addCancel">取消</button>
+      </div>
+    </div>
+    <div id="classList" class="class-list"></div>
+    <p class="hint" id="listEmpty" hidden>還沒有課堂。按「＋新增課堂」，或 <button type="button" class="linklike" id="wizReopen">重新跑三步驟引導</button>。</p>
+  </section>
+
+  <!-- 編輯一個課堂（沿用原本的設定表單） -->
+  <section class="card" id="editor" hidden>
+    <h2 id="editorTitle">編輯課堂</h2>
+    <label>課堂名稱
+      <input id="className" type="text" maxlength="40" placeholder="例：301 基礎版">
     </label>
-    <label>Google Apps Script 網址（/exec，可留空）
-      <input id="scriptUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
-    </label>
-    <p class="hint">必須是 https://script.google.com/ 開頭。</p>
 
     <h3>雷射筆</h3>
     <p class="hint">可只勾一種顏色。標示波長會寫進老師收到的試算表；學生畫面只標示常見值，不顯示與參考值的誤差。</p>
@@ -64,7 +97,7 @@
     </label>
 
     <h3>狹縫片清單（可留空）</h3>
-    <p class="hint">有填的話，學生頁會用下拉選單帶入 d 或 a，並保留「其他／自己填」。已預先建好執行長那兩片的 6 條縫（雙縫 d = 0.2／0.3／0.45 mm，單縫 a = 0.05／0.1／0.2 mm）；用別的片子可以改或刪。編號可自由填，例如 A-1、A-2。</p>
+    <p class="hint">有填的話，學生頁會用下拉選單帶入 d 或 a，並保留「其他／自己填」。預設是執行長那兩片的 6 條縫（雙縫 d = 0.2／0.3／0.45 mm，單縫 a = 0.05／0.1／0.2 mm）；用別的片子可以改或刪。</p>
     <p class="soft-hint" id="slitHintText" hidden>單位是 mm（片子若印 µm，例如 40 µm 請填 0.04）</p>
     <div class="table-wrap">
       <table class="slit-table" id="slitTable">
@@ -76,59 +109,89 @@
     </div>
     <div class="actions">
       <button type="button" id="addSlit">新增一列</button>
+      <button type="button" id="resetSlits">換回預設 6 條縫</button>
+    </div>
+    <ul class="errors" id="editErrors"></ul>
+    <div class="actions">
+      <button type="button" id="editSave" class="primary">儲存</button>
+      <button type="button" id="editCancel">取消</button>
     </div>
   </section>
 
-  <section class="card">
-    <div class="actions">
-      <button type="button" id="generate" class="primary">產生學生連結</button>
-    </div>
-    <ul class="errors" id="genErrors"></ul>
-    <div id="resultBox" hidden>
-      <h2>學生連結</h2>
-      <textarea id="studentUrl" rows="4" readonly></textarea>
-      <div class="actions">
-        <button type="button" id="copyUrl">複製連結</button>
-      </div>
-      <p class="hint" id="copyUrlStatus"></p>
-      <div id="qr" class="qr" aria-label="學生連結的 QR code"></div>
-      <p class="hint">請用手機掃描或把連結傳給學生。請勿公開張貼到網路。</p>
-      <h2>上課簡報網址</h2>
-      <input type="text" id="slidesUrl" readonly style="width:100%">
-      <div class="actions">
-        <button type="button" id="openSlides">開啟上課簡報</button>
-        <button type="button" id="copySlides">複製簡報網址</button>
-      </div>
-      <p class="hint" id="copySlidesStatus">簡報最後一頁的 QR code 就是上面的學生連結。換電腦投影時，打開這個網址即可。</p>
-    </div>
+  <!-- 全域設定：每位老師一份 -->
+  <section class="card" id="globalCard">
+    <h2>試算表與老師設定（所有課堂共用）</h2>
+    <label>您的名稱（顯示在學生頁頂端，可留空）
+      <input id="teacherName" type="text" placeholder="例：王老師" maxlength="80">
+    </label>
+    <label>Google Apps Script 網址（/exec，可留空）
+      <input id="scriptUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+    </label>
+    <label>Google 試算表網址（「看數據」會打開這裡）
+      <input id="sheetUrl" type="url" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off">
+    </label>
+    <ul class="errors" id="globalErrors"></ul>
+    <p class="hint" id="syncStatus"></p>
+    <details class="setup-help">
+      <summary>五分鐘設定試算表（第一次或更新程式時看這裡）</summary>
+      <p class="hint">不設也可以：學生的紀錄會存在自己的手機，可以下載 CSV 交給您。想讓資料自動進您的 Google 試算表，請照下面做一次就好。</p>
+      <ol class="steps-ol">
+        <li><b>開新試算表：</b>打開 <a href="https://sheets.google.com" target="_blank" rel="noopener">sheets.google.com</a>，按「空白」建立試算表，左上角檔名可改成「狹縫實驗紀錄」。把瀏覽器網址列的試算表網址貼到上面「Google 試算表網址」。</li>
+        <li><b>打開程式編輯器：</b>在試算表上方選單按「擴充功能」，再按「Apps Script」，會開出一個新分頁。</li>
+        <li><b>貼上接收程式：</b>先按這裡的
+          <button type="button" id="copyGs">複製接收程式</button>，
+          回到 Apps Script 分頁，把編輯區裡原本的程式全部選取刪掉，貼上剛剛複製的程式，按上方的磁碟片圖示儲存。</li>
+        <li><b>發布成網址：</b>按右上角藍色的「部署」，選「新增部署作業」。
+          <ul>
+            <li>按「選取類型」旁的齒輪，選「網頁應用程式」。</li>
+            <li>「執行身分」選「我」，「誰可以存取」選「所有人」，再按「部署」。</li>
+            <li>第一次會要求授權：按「授予存取權」，選您的 Google 帳號。若出現「Google 尚未驗證這個應用程式」，按左下「進階」，再按「前往…（不安全）」，最後按「允許」。這是您自己寫給自己用的程式，所以 Google 會這樣提醒。</li>
+          </ul>
+        </li>
+        <li><b>把網址貼回來：</b>部署完成的視窗裡有一行「網頁應用程式」網址，長得像 <code>https://script.google.com/macros/s/一長串英數字/exec</code>。按旁邊的「複製」，再貼到上面「Google Apps Script 網址」。</li>
+      </ol>
+      <p class="hint"><b>已經部署過、只要更新程式：</b>貼上新程式並儲存後，按「部署」→「管理部署作業」→ 選原本那一個 →  右上鉛筆「編輯」→「版本」選「新版本」→「部署」。網址不會變，學生連結都不用換。</p>
+      <p class="hint" id="copyGsStatus"></p>
+    </details>
+    <p class="warn-note">學生的姓名只會進您自己的試算表。學生連結含有您的程式網址，任何拿到連結的人都能送資料進來，請不要公開張貼到網路上。</p>
   </section>
 
   <section class="card">
     <h2>上課前列印（A4）</h2>
-    <ul>
-      <li><a href="print/分組紀錄表_A4.pdf?v=20261127" target="_blank" rel="noopener">分組紀錄表</a>：每組一張，先寫紙本再輸入網頁。</li>
-      <li><a href="print/屏幕量測紙_A4.pdf?v=20261127" target="_blank" rel="noopener">A4 屏幕量測紙</a>：每組一張，插在屏幕架上，對齊雷射光架 v1.3.0。<br>
-        <b>列印時選「實際大小／100%」，不要選「符合頁面」。</b>印好後用直尺量紙上的 100 mm 校正線，確認長度對。</li>
-    </ul>
+    <div class="print-links">
+      <ul>
+        <li><a href="print/分組紀錄表_A4.pdf?v=20261127" target="_blank" rel="noopener">分組紀錄表</a>：每組一張，先寫紙本再輸入網頁。</li>
+        <li><a href="print/屏幕量測紙_A4.pdf?v=20261127" target="_blank" rel="noopener">A4 屏幕量測紙</a>：每組一張，插在屏幕架上，對齊雷射光架 v1.3.0。<br>
+          <b>列印時選「實際大小／100%」，不要選「符合頁面」。</b>印好後用直尺量紙上的 100 mm 校正線，確認長度對。</li>
+      </ul>
+    </div>
   </section>
 
   <section class="card">
-    <h2>從既有學生連結讀回設定</h2>
-    <label>貼上先前產生的學生連結
-      <textarea id="importUrl" rows="3" placeholder="https://……/index.html#c=……"></textarea>
+    <h2>備份與換電腦</h2>
+    <p class="hint">課堂清單存在這台電腦的瀏覽器。換電腦或清除瀏覽器資料前，請先匯出備份；備份裡有您的老師金鑰，請自己保存，不要傳給學生。</p>
+    <div class="actions">
+      <button type="button" id="exportFile">匯出備份檔（.json）</button>
+      <button type="button" id="exportLink">複製備份連結</button>
+      <label class="filebtn">匯入備份檔<input type="file" id="importFile" accept=".json,application/json" hidden></label>
+    </div>
+    <label>或貼上備份連結、備份檔內容，或舊的學生連結（#c=）
+      <textarea id="importText" rows="3" placeholder="https://……/teacher.html#backup=……"></textarea>
     </label>
     <div class="actions">
-      <button type="button" id="importBtn">讀取設定</button>
+      <button type="button" id="importBtn">匯入</button>
+      <button type="button" id="wizReopen2">重新跑三步驟引導</button>
     </div>
-    <p class="hint" id="importStatus"></p>
+    <textarea id="backupOut" rows="3" readonly hidden></textarea>
+    <p class="hint" id="backupStatus"></p>
   </section>
 </main>
 <footer>
   QR code 產生程式採用 Kazuhiko Arase 的 QR Code Generator for JavaScript（MIT 授權），見 <a href="js/LICENSE-qrcode-generator.txt">授權說明</a>。
   「QR Code」是 DENSO WAVE INCORPORATED 的註冊商標。
 </footer>
-<script src="js/settings.js"></script>
-<script src="js/qrcode.js"></script>
-<script src="js/teacher.js?v=20261127b"></script>
+<script src="js/settings.js?v=20261127c"></script>
+<script src="js/classrooms.js?v=20261127c"></script>
+<script src="js/teacher.js?v=20261127c"></script>
 </body>
 </html>

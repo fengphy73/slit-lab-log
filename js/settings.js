@@ -43,6 +43,26 @@
     return { ok: true, value: u };
   }
 
+  // 短連結：老師 Apps Script 部署編號（/macros/s/<id>/exec）與課堂代碼
+  var CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  function isClassCode(c) { return /^[2-9A-HJKMNP-Z]{4,6}$/.test(String(c || '')); }
+  function isDeploymentId(t) { return /^[A-Za-z0-9_-]{10,200}$/.test(String(t || '')); }
+  function deploymentId(url) {
+    var m = /^https:\/\/script\.google\.com\/macros\/s\/([A-Za-z0-9_-]{10,200})\/exec\/?$/.exec(String(url || '').trim());
+    return m ? m[1] : '';
+  }
+  function scriptUrlFromId(t) { return 'https://script.google.com/macros/s/' + t + '/exec'; }
+  // 讀 ?t=…&c=…（短連結）；不合法回傳 null
+  function shortFromSearch(search) {
+    var q = {};
+    String(search || '').replace(/^\?/, '').split('&').forEach(function (kv) {
+      var i = kv.indexOf('=');
+      if (i > 0) { try { q[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); } catch (e) {} }
+    });
+    if (!isDeploymentId(q.t) || !isClassCode(q.c)) return null;
+    return { t: q.t, c: q.c, scriptUrl: scriptUrlFromId(q.t) };
+  }
+
   function parseLaser(row) {
     if (!row || (row.color !== 'red' && row.color !== 'green')) return null;
     var lam = Number(row.lambda0);
@@ -101,7 +121,7 @@
 
     var teacherName = (raw.teacherName === undefined || raw.teacherName === null) ? '' : String(raw.teacherName).trim().slice(0, 80);
 
-    return {
+    var out = {
       v: 1,
       scriptUrl: scriptUrl,
       teacherName: teacherName,
@@ -111,6 +131,12 @@
       slits: slits,
       warnings: warnings
     };
+    // 課堂清單產生的連結會帶課堂代碼與名稱（新版 Code.gs 依此分頁）
+    if (isClassCode(raw.classCode)) {
+      out.classCode = String(raw.classCode);
+      out.classroomName = (raw.classroomName == null ? '' : String(raw.classroomName)).trim().slice(0, 40);
+    }
+    return out;
   }
 
   function validateForGenerate(raw) {
@@ -246,6 +272,14 @@
 
   var api = {
     SCRIPT_PREFIX: SCRIPT_PREFIX,
+    CODE_CHARS: CODE_CHARS,
+    isClassCode: isClassCode,
+    isDeploymentId: isDeploymentId,
+    deploymentId: deploymentId,
+    scriptUrlFromId: scriptUrlFromId,
+    shortFromSearch: shortFromSearch,
+    utf8ToB64Url: utf8ToB64Url,
+    b64UrlToUtf8: b64UrlToUtf8,
     COLOR_CAPTION: COLOR_CAPTION,
     isValidScriptUrl: isValidScriptUrl,
     normalize: normalize,

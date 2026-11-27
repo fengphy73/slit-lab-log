@@ -26,8 +26,14 @@
   (function loadTeacherSettings() {
     var S = window.SlitSettings;
     if (!S) return;
-    var parsed = S.fromHash(location.hash);
     var box = document.getElementById('settingsBanner');
+    // 短連結 ?t=部署編號&c=課堂代碼：向老師的 Apps Script 讀課堂設定，存在這台裝置供離線使用
+    var short = S.shortFromSearch && S.shortFromSearch(location.search);
+    if (short) {
+      loadShortSettings(S, short, box);
+      return;
+    }
+    var parsed = S.fromHash(location.hash);
     if (!parsed.ok) {
       if (box) {
         box.hidden = false;
@@ -44,6 +50,44 @@
       box.textContent = parsed.settings.warnings.join(' ');
     }
   })();
+
+  function loadShortSettings(S, short, box) {
+    var cacheKey = 'slitLabLog.classCfg.v1:' + short.t + ':' + short.c;
+    var cachedRaw = null, cached = null;
+    try { cachedRaw = localStorage.getItem(cacheKey); cached = JSON.parse(cachedRaw); } catch (e) {}
+    function use(res) {
+      var cfg = S.normalize(res.config || {});
+      cfg.scriptUrl = short.scriptUrl;
+      cfg.classCode = short.c;
+      cfg.classroomName = String(res.name || cfg.classroomName || '').slice(0, 40);
+      activeSettings = cfg;
+      window.SLIT_ACTIVE_SETTINGS = cfg;
+    }
+    function banner(text, err) {
+      if (!box) return;
+      box.hidden = !text; box.className = 'banner' + (err ? ' err' : ''); box.textContent = text;
+    }
+    if (cached && cached.config) use(cached);
+    else {
+      // 還沒讀到設定也能記錄與送出（資料仍進老師的試算表、這個課堂的分頁）
+      use({ config: { slits: S.defaultSlits() }, name: '' });
+      banner('正在讀取老師的課堂設定…');
+    }
+    fetch(short.scriptUrl + '?action=config&c=' + encodeURIComponent(short.c)).then(function (res) {
+      return res.json();
+    }).then(function (res) {
+      if (!res || !res.ok || !res.config) throw new Error((res && res.error) || 'no config');
+      var fresh = JSON.stringify({ name: res.name || '', config: res.config });
+      if (fresh === cachedRaw) return;
+      var stored = false;
+      try { localStorage.setItem(cacheKey, fresh); stored = localStorage.getItem(cacheKey) === fresh; } catch (e) {}
+      if (!cached && stored) location.reload(); // 第一次開：讀到設定後重新載入套用
+      else if (!cached) banner('已讀到課堂設定，但這個瀏覽器不能儲存資料（可能是無痕模式），請改用一般模式開啟。', true);
+      else banner('老師已更新課堂設定，重新整理網頁後套用。');
+    }).catch(function () {
+      if (!cached) banner('讀不到老師的課堂設定（可能沒有網路，或老師尚未更新試算表程式）。先用預設狹縫，紀錄仍會存在這台裝置，也可以送出給老師。', true);
+    });
+  }
 
   // ---- 本機儲存 ----
   function loadRecords() { try { return JSON.parse(localStorage.getItem(KEY_RECORDS)) || []; } catch (e) { return []; } }
@@ -68,7 +112,7 @@
   // ---- 讀取分頁輸入 ----
   function readPanel(panel) {
     var o = {};
-    $$('input[data-f]', panel).forEach(function (el) {
+    $$('input[data-f], select[data-f]', panel).forEach(function (el) {
       var f = el.dataset.f;
       if (el.type === 'radio') { if (el.checked) o[f] = el.value; return; }
       o[f] = el.value;
@@ -245,6 +289,7 @@
     };
     var slitPick = (inp.slitPick || '').trim();
     rec.slitId = (slitPick && slitPick !== '__other__') ? slitPick : '';
+    if (activeSettings && activeSettings.classCode) { rec.classCode = activeSettings.classCode; rec.classroomName = activeSettings.classroomName || ''; }
     if (type === 'double') { rec.d = r.d; rec.n = r.n; rec.total = r.total; rec.dy = r.dy; }
     else { rec.a = r.a; rec.W = r.W; }
     var list = loadRecords(); list.unshift(rec); saveRecords(list);

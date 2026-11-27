@@ -76,3 +76,36 @@ footer a.teacher-link{margin-left:.5em}
 .soft-hint{color:var(--warn);font-size:.82rem;font-weight:normal;margin:4px 0 0;line-height:1.4}
 .checkrow .soft-hint{flex-basis:100%}
 .slit-table .soft-hint{margin:4px 0 0;max-width:16em}
+/* 課堂清單（teacher.html） */
+.list-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 2px 10px}
+.list-head h2{margin:0}
+.class-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:12px}
+.class-list .card{margin:0}
+main:has(.class-list){max-width:980px}
+.class-card{border-top:5px solid var(--c);display:flex;flex-direction:column}
+.cc-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.cc-head h3{margin:0;font-size:1.15rem}
+.cc-code{font-family:ui-monospace,Menlo,monospace;font-size:.82rem;color:#555;background:#f1f3f5;border-radius:4px;padding:1px 6px;white-space:nowrap}
+.cc-sum{font-size:.88rem;color:#333;margin:6px 0 10px;line-height:1.5}
+.cc-main{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.cc-main button{padding:10px 4px;font-size:.92rem}
+.cc-link{font-size:13px;margin-top:8px}
+.cc-status{margin:8px 0 6px}
+.cc-more{display:flex;gap:6px;margin-top:auto;padding-top:6px;border-top:1px solid #eee}
+.cc-more button{padding:5px 10px;font-size:.82rem;background:#fff}
+button.danger{color:var(--err);border-color:#e3b3b3}
+button.linklike{border:0;background:none;color:var(--c);text-decoration:underline;padding:0;font-size:inherit}
+.add-box select{display:block;width:100%;font-size:16px;padding:8px;margin-top:3px}
+.wizard{border:2px solid var(--c)}
+.wiz-steps{display:flex;gap:6px;list-style:none;padding:0;margin:0 0 10px}
+.wiz-steps li{flex:1;text-align:center;padding:6px 4px;border-radius:6px;background:#eef1f4;color:#666;font-size:.9rem}
+.wiz-steps li.on{background:var(--c);color:#fff;font-weight:bold}
+.wiz-steps li.done{background:#dfe9f5;color:var(--c)}
+.wiz-actions{align-items:center;margin-top:10px}
+.wiz-actions .spacer{flex:1}
+.lv{font-size:.8rem;border-radius:4px;padding:0 5px}
+.lv.suggest{background:#e6f4ea;color:#1e7b34}.lv.advanced{background:#fff1e0;color:#a35a00}
+.setup-help summary{cursor:pointer;font-weight:bold;margin:8px 0;color:var(--c)}
+.filebtn{display:inline-block;margin:0;font-size:.95rem;padding:9px 14px;border-radius:6px;border:1px solid #999;background:#fafafa;cursor:pointer}
+@media (max-width:420px){.cc-main button{font-size:.85rem}}
+[hidden]{display:none!important}

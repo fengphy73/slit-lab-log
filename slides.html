@@ -32,7 +32,16 @@
   #qr svg { width: min(62vh, 45vw); height: auto; display: block; }
   .qr-text { font-size: clamp(20px, 3.3vw, 5.6vh); line-height: 1.5; max-width: 40vw; }
   .qr-url { font-size: clamp(12px, 1.6vw, 2.8vh); word-break: break-all; margin-top: 2vh; }
-  .pageno { position: fixed; right: 2vw; bottom: 1.5vh; font-size: clamp(14px, 1.8vw, 3vh); }
+  .slide { position: relative; }
+  .slide.hascorner { padding-right: calc(5vw + 15vh); }
+  .slide.imgslide.hascorner { padding-right: calc(2vw + 17vh); }
+  .cornerqr { position: absolute; right: 1.2vw; bottom: 1.2vh; width: 15vh; text-align: center; font-size: clamp(11px, 1.3vw, 2.2vh); line-height: 1.2; background: #fff; }
+  .cornerqr svg { width: 100%; height: auto; display: block; }
+  /* 長連結（還沒設定試算表）的 QR 很密，角落 QR 放大才掃得到 */
+  body.dense .cornerqr { width: 24vh; }
+  body.dense .slide.hascorner { padding-right: calc(5vw + 24vh); }
+  body.dense .slide.imgslide.hascorner { padding-right: calc(2vw + 26vh); }
+  .pageno { position: fixed; left: 50%; transform: translateX(-50%); bottom: 1.5vh; font-size: clamp(14px, 1.8vw, 3vh); }
   .help { position: fixed; left: 2vw; bottom: 1.5vh; font-size: clamp(12px, 1.4vw, 2.4vh); color: #555; }
   @media print {
     @page { size: A4 landscape; margin: 0; }
@@ -49,18 +58,20 @@
     #qr svg { width: 120mm; }
     .qr-url { font-size: 9pt; }
     .pageno, .help { display: none; }
+    .slide.hascorner { padding-right: 52mm; }
+    .cornerqr { width: 36mm; right: 6mm; bottom: 5mm; font-size: 9pt; }
   }
 </style>
 </head>
 <body>
 
 <section class="slide imgslide">
-  <img src="img/setup.png" alt="架設：雷射、狹縫片、屏幕三件排成一直線，L 約 1000 mm">
+  <img src="img/setup.png?v=2" alt="架設：雷射、狹縫片、屏幕三件排成一直線，L 約 1000 mm">
   <p class="note">⚠️ 雷射不可以對著眼睛，也不可以對著同學。先不放狹縫片，讓光點對準紅色 0 線。</p>
 </section>
 
 <section class="slide imgslide">
-  <img src="img/screen-align.png" alt="屏幕紙插到底，光點落在紅色 0 線上">
+  <img src="img/screen-align.png?v=2" alt="屏幕紙插到底，光點落在紅色 0 線上">
 </section>
 
 <section class="slide imgslide">
@@ -129,7 +140,7 @@
   <div class="row"><ol>
     <li>數據先寫在<b>分組紀錄表</b></li>
     <li>自己算出 <b>λ = ＿＿ mm = ＿＿ nm</b></li>
-    <li>掃下一頁的 QR code，打開<b>實驗紀錄網頁</b></li>
+    <li>掃右下角的 QR code，打開<b>實驗紀錄網頁</b></li>
     <li>照紀錄表一欄一欄輸入 → 按<span class="key">核對</span> → 按<span class="key">儲存這筆紀錄</span></li>
   </ol><div class="fig"><svg viewBox="0 0 520 380" font-family="Noto Sans CJK TC, Microsoft JhengHei, sans-serif" aria-label="先寫紙本再輸入網頁流程圖">
   <rect x="30" y="20" width="200" height="150" fill="#fff" stroke="#000" stroke-width="3"/>
@@ -169,25 +180,32 @@
 <div class="help" id="help">← → 翻頁　F 全螢幕</div>
 
 <script src="js/qrcode.js"></script>
-<script src="js/settings.js"></script>
+<script src="js/settings.js?v=20261127c"></script>
+<script src="js/classrooms.js?v=20261127c"></script>
 <script>
 (function () {
   'use strict';
-  // QR code：預設連到學生頁；若簡報網址帶老師設定（#c=…），就連到那位老師的學生連結
-  var base = new URL('index.html', location.href).href.split('#')[0];
-  var target = base, srcText = '尚未套用老師設定（連到預設學生頁）';
-  var S = window.SlitSettings;
+  // QR code：預設連到學生頁；簡報網址帶課堂短連結（?t=…&c=…）或老師設定（#c=…）時，連到那個課堂
+  var base = new URL('index.html', location.href).href.split('#')[0].split('?')[0];
+  var target = base, srcText = '尚未套用老師設定（連到預設學生頁）', showUrl = true;
+  var S = window.SlitSettings, SC = window.SlitClassrooms;
   var token = S ? S.tokenFromHash(location.hash) : '';
-  if (token && S.decodeToken(token).ok) {
-    target = base + '#c=' + token; srcText = '連到：老師連結的設定';
-  } else if (S) {
-    // 同一台電腦的教師頁按過「產生學生連結」，就用那份設定
+  var short = S ? S.shortFromSearch(location.search) : null;
+  if (short) {
+    target = base + '?t=' + short.t + '&c=' + short.c;
+    var known = SC && SC.findClass(SC.load(), short.c);
+    srcText = '連到課堂：' + (known ? known.name : short.c);
+  } else if (token && S.decodeToken(token).ok) {
+    var st = S.decodeToken(token).settings;
+    target = base + '#c=' + token; showUrl = false;
+    srcText = '連到：' + (st.classroomName ? '課堂 ' + st.classroomName : '老師連結的設定');
+  } else if (SC) {
+    // 同一台電腦的課堂清單：用第一個課堂（舊版教師頁的設定會自動轉成課堂）
     try {
-      var raw = localStorage.getItem('slitLabLog.teacherConfig.v1');
-      if (raw) {
-        var v = S.buildStudentUrl(JSON.parse(raw), base);
-        if (v.ok) { target = v.url; token = 'saved'; srcText = '連到：' + ((v.settings.teacherName || '').trim() || '教師頁') + ' 存的設定'; }
-      }
+      var store = SC.load();
+      var first = store.classrooms[0];
+      var v = first && SC.linkFor(store, first, base);
+      if (v && v.ok) { target = v.url; showUrl = v.short; srcText = '連到課堂：' + first.name + '（教師頁存的第一個課堂）'; }
     } catch (e) {}
   }
   try {
@@ -199,7 +217,19 @@
     try { var q2 = qrcode(0, 'L'); q2.addData(target); q2.make(); document.getElementById('qr').innerHTML = q2.createSvgTag(8, 4); }
     catch (e2) { document.getElementById('qr').textContent = 'QR code 產生失敗，請改用網址。'; }
   }
-  document.getElementById('qrUrl').textContent = token ? '' : target;
+  if (target.length > 300) document.body.classList.add('dense');
+  // 每頁右下角放同一個學生 QR（最後一頁已有大張的，不重複）
+  var big = document.querySelector('#qr svg');
+  if (big) {
+    var all = document.querySelectorAll('.slide');
+    for (var k = 0; k < all.length - 1; k++) {
+      var c = document.createElement('div');
+      c.className = 'cornerqr';
+      c.innerHTML = big.outerHTML + '<div>掃描記錄數據</div>';
+      all[k].appendChild(c); all[k].classList.add('hascorner');
+    }
+  }
+  document.getElementById('qrUrl').textContent = showUrl ? target : '';
   document.getElementById('qrSrc').textContent = srcText;
 
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
