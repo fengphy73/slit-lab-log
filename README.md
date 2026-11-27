@@ -17,18 +17,21 @@
 ```
 slit-lab-log/
 ├── index.html               學生頁（基本資料、兩個分頁、我的紀錄）
-├── teacher.html             老師設定頁（產生學生連結與 QR code）
+├── teacher.html             課堂清單（老師頁：課堂卡片、全域設定、引導、備份）
+├── slides.html              上課簡報（每頁右下角學生 QR）
 ├── css/style.css            樣式（手機優先）
 ├── js/config.js             預設 TEACHER_SCRIPT_URL、LASER_REF、LAMBDA_MATCH_TOL_PCT
 ├── js/settings.js           老師設定的編碼／解碼（#c=）
 ├── js/calc.js               計算、核對、紅綠比較（網頁與測試共用）
 ├── js/app.js                介面互動、讀取老師設定、localStorage、CSV、送出
-├── js/teacher.js            老師設定頁互動
+├── js/classrooms.js         課堂清單資料：本機儲存、短代碼、學生連結、備份
+├── js/teacher.js            課堂清單頁互動
 ├── js/qrcode.js             QR code 產生程式（Kazuhiko Arase，MIT）
 ├── js/LICENSE-qrcode-generator.txt
 ├── apps_script/Code.gs      Google Apps Script 接收端（雙狹縫、單狹縫各一個工作表）
 ├── apps_script/設定說明.md  執行長自行建立試算表與部署的步驟
 ├── tests/calc.test.js       計算與核對測試（node:test）
+├── tests/codegs.test.js     Code.gs v2 模擬測試（舊分頁、課堂分頁、金鑰、config、重複）
 ├── tests/測試紀錄.md        測試結果
 ├── screenshot_雙狹縫.png    手機尺寸截圖（核對後顯示算法）
 ├── screenshot_單狹縫.png
@@ -40,7 +43,7 @@ slit-lab-log/
 ## 如何在本機開啟
 - 直接用瀏覽器打開 `index.html` 即可（不需安裝、不需建置）。網址加 `#single` 直接開單狹縫分頁。
 - 或在本資料夾執行 `python3 -m http.server 8000`，再開 <http://localhost:8000>。
-- 執行測試：`node --test tests/calc.test.js`
+- 執行測試：`node --test tests/*.test.js`
 
 ## 資料儲存
 1. **學生裝置**：每筆紀錄存在瀏覽器 localStorage（鍵 `slitLabLog.records.v2`，與舊版三次量測的資料分開），可列出歷次紀錄、刪除單筆、下載 CSV（UTF-8 含 BOM，Excel 可直接開）。每筆記錄同時存學生算出的波長與正確波長。
@@ -57,6 +60,17 @@ slit-lab-log/
 - 雙狹縫新增「量了幾個間距 n（從第 0 條算起）」（預設 10，可改，範圍 1–20），Δy = 總長 ÷ n；欄位下有給學生看的說明。CSV 與 Apps Script 同步加上 n。
 - 基本資料新增必填「姓名」；CSV 與 Apps Script 同步加入。同組紅綠比較仍依班級＋座號或組別分組，不用姓名。
 - 「清空量測」會一併清掉雙狹縫的 d、單狹縫的 a。
+
+## 課堂清單與短連結（2026-11-27）
+- `teacher.html` 打開就是課堂卡片（例：301 基礎版、302 進階版），每張各自存縫的設定（雷射、實驗、L、狹縫片），有「開啟簡報」「複製學生連結」「看數據」與編輯、複製成新課堂、刪除。
+- 全域設定（每位老師一份）：老師名稱、Apps Script `/exec` 網址、Google 試算表網址（「看數據」開這裡，第一次按會請老師貼上）。
+- 第一次進來跑三步驟引導（取名、選縫、印紙），可略過、可重開。
+- 儲存在 localStorage `slitLabLog.classrooms.v1`；舊版 `slitLabLog.teacherConfig.v1` 會自動轉成第一個課堂「我的課堂」。可匯出 .json 或備份連結 `teacher.html#backup=…`，也能匯入舊的學生連結。
+- 每個課堂有 4 碼短代碼（字元 `23456789ABCDEFGHJKMNPQRSTUVWXYZ`）。
+- **短連結**：`index.html?t=<部署編號>&c=<代碼>`。教師頁儲存課堂時 POST `{action:'saveClass'}` 到老師自己的 Apps Script，再用 GET `?action=config&c=` 讀回確認；確認成功才給短連結，否則（沒設網址、Code.gs 還是 v1、沒網路）自動用長連結 `#c=`，照樣能用。
+- 學生頁讀短連結時向老師的 `/exec` 讀課堂設定並快取在手機（`slitLabLog.classCfg.v1:<t>:<c>`），之後沒網路也能開；紀錄多帶 `classCode`、`classroomName`。舊的 `#c=` 連結完全照舊。
+- `slides.html` 支援 `?t=&c=`、`#c=`，沒帶參數時用這台電腦課堂清單的第一個課堂；1–7 頁右下角與第 8 頁都是同一個學生 QR。長連結時角落 QR 自動放大。
+- Code.gs v2 更新步驟見 `apps_script/設定說明.md`「更新成 v2」。
 
 ## 照片上傳（擴充位置，尚未實作）
 目前只有選填的「照片編號」文字欄。若執行長決定要上傳照片，可在：
