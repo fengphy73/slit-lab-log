@@ -46,6 +46,18 @@
   // 短連結：老師 Apps Script 部署編號（/macros/s/<id>/exec）與課堂代碼
   var CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
   function isClassCode(c) { return /^[2-9A-HJKMNP-Z]{4,6}$/.test(String(c || '')); }
+  function isClassId(c) { return /^[A-Za-z0-9]{4,16}$/.test(String(c || '')); }
+  // 教師頁「貼上 Apps Script 網址」的格式檢查：回傳 { ok, url } 或 { ok:false, step, error }
+  function checkScriptUrl(raw) {
+    var u = String(raw == null ? '' : raw).trim();
+    if (!u) return { ok: false, step: 3, empty: true, error: '還沒貼網址' };
+    if (/^https:\/\/docs\.google\.com\/spreadsheets\//.test(u)) return { ok: false, step: 3, error: '這是試算表的網址，不是程式的網址。請回到部署完成的視窗，複製「網頁應用程式」底下那一條（結尾是 /exec）。' };
+    if (/^https:\/\/script\.google\.com\/(home|d\/)/.test(u)) return { ok: false, step: 3, error: '這是程式編輯器的網址。請在部署完成的視窗複製「網頁應用程式」網址（結尾是 /exec）。' };
+    var m = /^https:\/\/script\.google\.com\/(a\/[^\/\s]+\/)?macros\/s\/([A-Za-z0-9_-]{10,200})\/(exec|dev)\/?(\?.*)?$/.exec(u);
+    if (!m) return { ok: false, step: 3, error: '網址格式不對：應該是 https://script.google.com/macros/s/一長串英數字/exec。可能只複製到一部分，請按部署視窗裡網址旁的「複製」再貼一次。' };
+    if (m[3] === 'dev') return { ok: false, step: 3, error: '這是測試用網址（結尾 /dev），學生送不進來。請複製「網頁應用程式」網址（結尾 /exec）。' };
+    return { ok: true, url: 'https://script.google.com/' + (m[1] || '') + 'macros/s/' + m[2] + '/exec' };
+  }
   function isDeploymentId(t) { return /^[A-Za-z0-9_-]{10,200}$/.test(String(t || '')); }
   function deploymentId(url) {
     var m = /^https:\/\/script\.google\.com\/macros\/s\/([A-Za-z0-9_-]{10,200})\/exec\/?$/.exec(String(url || '').trim());
@@ -134,6 +146,11 @@
     // 課堂清單產生的連結會帶課堂代碼與名稱（新版 Code.gs 依此分頁）
     if (isClassCode(raw.classCode)) {
       out.classCode = String(raw.classCode);
+      out.classroomName = (raw.classroomName == null ? '' : String(raw.classroomName)).trim().slice(0, 40);
+    }
+    // v3：班級編號（教師頁產生，對應總試算表裡的班級分頁）
+    if (isClassId(raw.classId)) {
+      out.classId = String(raw.classId);
       out.classroomName = (raw.classroomName == null ? '' : String(raw.classroomName)).trim().slice(0, 40);
     }
     return out;
@@ -274,6 +291,8 @@
     SCRIPT_PREFIX: SCRIPT_PREFIX,
     CODE_CHARS: CODE_CHARS,
     isClassCode: isClassCode,
+    isClassId: isClassId,
+    checkScriptUrl: checkScriptUrl,
     isDeploymentId: isDeploymentId,
     deploymentId: deploymentId,
     scriptUrlFromId: scriptUrlFromId,

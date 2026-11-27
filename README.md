@@ -17,21 +17,24 @@
 ```
 slit-lab-log/
 ├── index.html               學生頁（基本資料、兩個分頁、我的紀錄）
-├── teacher.html             課堂清單（老師頁：課堂卡片、全域設定、引導、備份）
+├── teacher.html             班級清單（老師頁：第一次設定圖解、班級卡片、封存、換電腦）
 ├── slides.html              上課簡報（每頁右下角學生 QR）
 ├── css/style.css            樣式（手機優先）
 ├── js/config.js             預設 TEACHER_SCRIPT_URL、LASER_REF、LAMBDA_MATCH_TOL_PCT
 ├── js/settings.js           老師設定的編碼／解碼（#c=）
 ├── js/calc.js               計算、核對、紅綠比較（網頁與測試共用）
 ├── js/app.js                介面互動、讀取老師設定、localStorage、CSV、送出
-├── js/classrooms.js         課堂清單資料：本機儲存、短代碼、學生連結、備份
-├── js/teacher.js            課堂清單頁互動
+├── js/classrooms.js         班級清單資料：本機快取＋雲端清單、學生長連結、「我的教師頁」連結
+├── js/teacher.js            班級清單頁互動（貼網址自動測試、新增／編輯／封存／刪除班級）
 ├── js/qrcode.js             QR code 產生程式（Kazuhiko Arase，MIT）
 ├── js/LICENSE-qrcode-generator.txt
-├── apps_script/Code.gs      Google Apps Script 接收端（雙狹縫、單狹縫各一個工作表）
+├── apps_script/Code.gs      Google Apps Script 接收端 v3（總試算表，每班一個分頁；舊連結照舊進「雙狹縫」「單狹縫」）
 ├── apps_script/設定說明.md  執行長自行建立試算表與部署的步驟
 ├── tests/calc.test.js       計算與核對測試（node:test）
-├── tests/codegs.test.js     Code.gs v2 模擬測試（舊分頁、課堂分頁、金鑰、config、重複）
+├── tests/codegs.test.js     Code.gs v3 模擬測試（建分頁、改名、封存、合併表頭、舊紀錄相容、金鑰、分頁名衝突）
+├── tests/gasmock.js         模擬 Apps Script 環境（測試與本機假後端共用）
+├── tests/classrooms.test.js 班級清單邏輯測試
+├── img/setup-guide/         第一次設定圖解（目前是佔位圖，之後換真截圖）
 ├── tests/測試紀錄.md        測試結果
 ├── screenshot_雙狹縫.png    手機尺寸截圖（核對後顯示算法）
 ├── screenshot_單狹縫.png
@@ -61,7 +64,7 @@ slit-lab-log/
 - 基本資料新增必填「姓名」；CSV 與 Apps Script 同步加入。同組紅綠比較仍依班級＋座號或組別分組，不用姓名。
 - 「清空量測」會一併清掉雙狹縫的 d、單狹縫的 a。
 
-## 課堂清單與短連結（2026-11-27）
+## 課堂清單與短連結（2026-11-27，已由 v3 取代）
 - `teacher.html` 打開就是課堂卡片（例：301 基礎版、302 進階版），每張各自存縫的設定（雷射、實驗、L、狹縫片），有「開啟簡報」「複製學生連結」「看數據」與編輯、複製成新課堂、刪除。
 - 全域設定（每位老師一份）：老師名稱、Apps Script `/exec` 網址、Google 試算表網址（「看數據」開這裡，第一次按會請老師貼上）。
 - 第一次進來跑三步驟引導（取名、選縫、印紙），可略過、可重開。
@@ -71,6 +74,16 @@ slit-lab-log/
 - 學生頁讀短連結時向老師的 `/exec` 讀課堂設定並快取在手機（`slitLabLog.classCfg.v1:<t>:<c>`），之後沒網路也能開；紀錄多帶 `classCode`、`classroomName`。舊的 `#c=` 連結完全照舊。
 - `slides.html` 支援 `?t=&c=`、`#c=`，沒帶參數時用這台電腦課堂清單的第一個課堂；1–7 頁右下角與第 8 頁都是同一個學生 QR。長連結時角落 QR 自動放大。
 - Code.gs v2 更新步驟見 `apps_script/設定說明.md`「更新成 v2」。
+
+## 一次設定＋總試算表每班一分頁（2026-11-27，v3）
+- 執行長決定：一個總試算表，每班一個分頁；一律長連結，拿掉「同步」與短連結產生。
+- 老師只設定一次：①複製範本試算表（`TEMPLATE_SHEET_ID` 佔位，在 `js/classrooms.js`）②部署（網頁應用程式、我、所有人、授權）③貼 `/exec` 網址 → 網站自動測試並指出錯在哪一步。完成後設定區收起來。
+- 「＋新增班級」→ `GET ?action=addClass` 在總試算表建以班名命名的分頁；卡片「看數據」開 `總試算表#gid=分頁編號`。班級以固定的班級編號（`classId`）對應分頁編號，改名＝分頁改名。
+- 學生長連結 `#c=` 多帶 `classId`；學生頁開啟時 `GET ?action=config&id=` 讀最新設定（存在手機），老師改縫或改名後舊連結也拿到新設定。紀錄帶 `classId`。
+- 換電腦：`teacher.html#setup=…`（程式網址＋金鑰＋名稱），打開後班級清單從雲端取回，網址列不留金鑰。舊的備份匯出／匯入與三步驟引導已移除。
+- 舊教師頁存的課堂會自動搬過來（代碼沿用為班級編號），接上 v3 後自動建分頁。
+- 本機測試：`node --test tests/*.test.js`；瀏覽器情境見 `/workspace/slit-tests/run_onesetup.js`（假後端 `mockgas.js` 在 8766 真的跑 Code.gs）。
+- 細節與相容性見 `apps_script/設定說明.md`。
 
 ## 照片上傳（擴充位置，尚未實作）
 目前只有選填的「照片編號」文字欄。若執行長決定要上傳照片，可在：

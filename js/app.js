@@ -44,12 +44,41 @@
     }
     if (!parsed.settings) return;
     activeSettings = parsed.settings;
+    if (activeSettings.classId && activeSettings.scriptUrl) activeSettings = withLatestClassConfig(S, activeSettings, box);
     window.SLIT_ACTIVE_SETTINGS = activeSettings;
     if (parsed.settings.warnings && parsed.settings.warnings.length && box) {
       box.hidden = false;
       box.textContent = parsed.settings.warnings.join(' ');
     }
   })();
+
+  // 班級連結（v3）：老師之後改了縫或班名，舊連結也會拿到新設定（存在這台裝置，離線照用）
+  function withLatestClassConfig(S, base, box) {
+    var cacheKey = 'slitLabLog.classCfg.v3:' + base.classId;
+    function merge(res) {
+      var raw = {};
+      Object.keys(base).forEach(function (k) { raw[k] = base[k]; });
+      var c = res.config || {};
+      ['teacherName', 'lasers', 'experiments', 'suggestedL', 'slits'].forEach(function (k) { if (c[k] !== undefined) raw[k] = c[k]; });
+      if (res.name) raw.classroomName = res.name;
+      return S.normalize(raw);
+    }
+    var sig = function (st) { return JSON.stringify([st.teacherName, st.lasers, st.experiments, st.suggestedL, st.slits, st.classroomName]); };
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(cacheKey)); } catch (e) {}
+    var current = cached && cached.config ? merge(cached) : base;
+    fetch(base.scriptUrl + '?action=config&id=' + encodeURIComponent(base.classId)).then(function (r) { return r.json(); }).then(function (res) {
+      if (!res || !res.ok || !res.config) return;
+      var fresh = merge(res);
+      var guard = 'slitLabLog.reloaded:' + base.classId;
+      if (sig(fresh) === sig(current)) { try { sessionStorage.removeItem(guard); } catch (e) {} return; }
+      var saved = false;
+      try { localStorage.setItem(cacheKey, JSON.stringify({ name: res.name || '', config: res.config })); saved = true; } catch (e) {}
+      if (saved && !sessionStorage.getItem(guard)) { sessionStorage.setItem(guard, '1'); location.reload(); }
+      else if (box) { box.hidden = false; box.className = 'banner'; box.textContent = '老師已更新這個班的設定，重新整理網頁後套用。'; }
+    }).catch(function () { /* 沒網路或老師程式是舊版：用連結裡的設定 */ });
+    return current;
+  }
 
   function loadShortSettings(S, short, box) {
     var cacheKey = 'slitLabLog.classCfg.v1:' + short.t + ':' + short.c;
@@ -289,7 +318,8 @@
     };
     var slitPick = (inp.slitPick || '').trim();
     rec.slitId = (slitPick && slitPick !== '__other__') ? slitPick : '';
-    if (activeSettings && activeSettings.classCode) { rec.classCode = activeSettings.classCode; rec.classroomName = activeSettings.classroomName || ''; }
+    if (activeSettings && activeSettings.classId) { rec.classId = activeSettings.classId; rec.classroomName = activeSettings.classroomName || ''; }
+    else if (activeSettings && activeSettings.classCode) { rec.classCode = activeSettings.classCode; rec.classroomName = activeSettings.classroomName || ''; }
     if (type === 'double') { rec.d = r.d; rec.n = r.n; rec.total = r.total; rec.dy = r.dy; }
     else { rec.a = r.a; rec.W = r.W; }
     var list = loadRecords(); list.unshift(rec); saveRecords(list);
